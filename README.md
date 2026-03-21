@@ -1,36 +1,117 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# GPU Market Dashboard (MVP)
 
-## Getting Started
+Internal Next.js + TypeScript dashboard for local GPU marketplace analysis.
 
-First, run the development server:
+## Stack
+
+- Next.js (App Router)
+- TypeScript
+- Tailwind CSS
+- Prisma 7
+- PostgreSQL + `@prisma/adapter-pg` + `pg`
+
+## Prerequisites
+
+- Node.js 20.9+
+- PostgreSQL running locally or remotely
+- `DATABASE_URL` set in `.env`
+
+Example `.env` entry:
+
+```bash
+DATABASE_URL="postgresql://user:password@localhost:5432/gpu_market_dashboard?schema=public"
+```
+
+## Install
+
+```bash
+npm install
+```
+
+## Prisma setup
+
+Generate client:
+
+```bash
+npm run db:generate
+```
+
+Run migrations:
+
+```bash
+npm run db:migrate
+```
+
+## Seed mock snapshot data
+
+```bash
+npm run collect
+```
+
+`collect` defaults to mock mode. For live ingestion:
+
+```bash
+INGEST_MODE=vast npm run collect
+```
+
+Live mode required env:
+
+```bash
+# optional override; defaults to Vast bundles endpoint
+VAST_API_URL="https://console.vast.ai/api/v0/bundles/"
+# optional override; defaults to POST
+VAST_API_METHOD="POST"
+# required for authenticated requests
+VAST_API_KEY="your-token"
+# optional JSON body override for POST requests
+VAST_REQUEST_JSON='{"limit":100,"verified":{"eq":true},"rentable":{"eq":true},"rented":{"eq":false}}'
+```
+
+## Recompute GPU rollups
+
+```bash
+npm run recompute
+```
+
+## Pipeline status
+
+```bash
+npm run status
+```
+
+## Install 30-minute cron
+
+```bash
+npm run cron:install
+```
+
+Cron logs:
+
+```bash
+tail -f /tmp/gpu-market-dashboard-cron.log
+```
+
+## Run app
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Then open [http://localhost:3000](http://localhost:3000). The app redirects `/` to `/market`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Routes
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- `/market` dashboard table for latest rollups
+- `/gpus/[gpu]` GPU detail stub
+- `/scoring` weighted scenario scoring view
+- `/pricing` simple price band recommendations
+- `/api/metrics` latest snapshot rollup JSON
+- `/api/metrics/gpu/[gpu]` 24h bucketed trend points
+- `/api/scores` score calculator endpoint
 
-## Learn More
+## Notes
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- No secrets are committed.
+- `scripts/collectSnapshots.ts` supports both `mock` and `vast` ingestion modes.
+- Trend aggregation is bucketed at UTC half-hour boundaries (`:00` / `:30`).
+- Trend rows are idempotent via uniqueness key (`gpuName`, `bucketStartUtc`, `source`).

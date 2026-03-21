@@ -1,0 +1,133 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model MarketSnapshot {
+  id               String             @id @default(cuid())
+  source           String
+  ingestMode       String?
+  sourceQueryHash  String?
+  sourceQuery      Json?
+  capturedAt       DateTime           @default(now())
+  createdAt        DateTime           @default(now())
+  offers           Offer[]
+  rollups          GpuRollup[]
+  trendAggregates  GpuTrendAggregate[]
+
+  @@index([capturedAt])
+  @@index([sourceQueryHash])
+}
+
+model Offer {
+  id               String   @id @default(cuid())
+  snapshotId       String
+  offerId          String
+  gpuName          String
+  numGpus          Int      @default(1)
+  gpuRamGb         Int?
+  cpuCores         Int?
+  ramGb            Int?
+  diskGb           Int?
+  inetUpMbps       Float?
+  inetDownMbps     Float?
+  rentable         Boolean  @default(false)
+  rented           Boolean  @default(false)
+  verified         Boolean?
+  reliabilityScore Float?
+  pricePerHour     Float?
+  rawJson          Json?
+  createdAt        DateTime @default(now())
+
+  snapshot MarketSnapshot @relation(fields: [snapshotId], references: [id], onDelete: Cascade)
+
+  @@index([snapshotId])
+  @@index([gpuName])
+  @@index([offerId])
+  @@index([rentable])
+  @@index([rented])
+}
+
+model GpuRollup {
+  id                 String   @id @default(cuid())
+  snapshotId         String
+  gpuName            String
+  totalOffers        Int
+  rentableOffers     Int
+  rentedOffers       Int
+  impliedUtilization Float
+  minPrice           Float?
+  medianPrice        Float?
+  p90Price           Float?
+  createdAt          DateTime @default(now())
+
+  snapshot MarketSnapshot @relation(fields: [snapshotId], references: [id], onDelete: Cascade)
+
+  @@index([snapshotId])
+  @@index([gpuName])
+  @@unique([snapshotId, gpuName])
+}
+
+model GpuTrendAggregate {
+  id                 String   @id @default(cuid())
+  snapshotId         String
+  source             String
+  gpuName            String
+  bucketStartUtc     DateTime
+  snapshotCount      Int
+  totalOffers        Int
+  rentableOffers     Int
+  rentedOffers       Int
+  impliedUtilization Float
+  availabilityRatio  Float
+  minPrice           Float?
+  medianPrice        Float?
+  p90Price           Float?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  snapshot MarketSnapshot @relation(fields: [snapshotId], references: [id], onDelete: Cascade)
+
+  @@index([bucketStartUtc])
+  @@index([gpuName, bucketStartUtc])
+  @@unique([gpuName, bucketStartUtc, source])
+}
+
+model HardwareScenario {
+  id                    String   @id @default(cuid())
+  gpuName               String
+  gpuCount              Int
+  assumedPowerWatts     Int
+  assumedHardwareCost   Float
+  electricityCostPerKwh Float
+  targetPaybackMonths   Int
+  notes                 String?
+  createdAt             DateTime @default(now())
+
+  scores ScenarioScore[]
+
+  @@index([gpuName])
+}
+
+model ScenarioScore {
+  id                     String   @id @default(cuid())
+  scenarioId             String
+  demandScore            Float
+  competitionScore       Float
+  priceStrengthScore     Float
+  efficiencyScore        Float
+  overallScore           Float
+  recommendation         String
+  recommendedPriceLow    Float?
+  recommendedPriceTarget Float?
+  recommendedPriceHigh   Float?
+  createdAt              DateTime @default(now())
+
+  scenario HardwareScenario @relation(fields: [scenarioId], references: [id], onDelete: Cascade)
+
+  @@index([scenarioId])
+}
