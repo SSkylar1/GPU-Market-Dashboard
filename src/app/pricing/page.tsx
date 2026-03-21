@@ -5,8 +5,8 @@ export default function PricingPage() {
 
   return (
     <main className="mx-auto w-full max-w-3xl p-6 md:p-10">
-      <h1 className="mb-4 text-2xl font-semibold">Pricing Recommendations</h1>
-      <div className="rounded border border-zinc-200 bg-zinc-50 p-4 text-sm">
+      <h1 className="mb-4 text-2xl font-semibold text-zinc-100">Pricing Recommendations</h1>
+      <div className="rounded border border-zinc-200 bg-zinc-50 p-4 text-sm text-zinc-900">
         <p>Aggressive: ${bands.aggressive.toFixed(3)}/hr</p>
         <p>Target: ${bands.target.toFixed(3)}/hr</p>
         <p>Premium: ${bands.premium.toFixed(3)}/hr</p>
