@@ -8,10 +8,9 @@ export default async function MarketPage() {
     findFirst: (args: { orderBy: { bucketStartUtc: "desc" }; select: { bucketStartUtc: true } }) => Promise<{ bucketStartUtc: Date } | null>;
   } }).gpuTrendAggregate;
 
-  const [snapshots, latestAggregateBucket] = await Promise.all([
-    prisma.marketSnapshot.findMany({
+  const [latestSnapshot, latestAggregateBucket] = await Promise.all([
+    prisma.marketSnapshot.findFirst({
       orderBy: { capturedAt: "desc" },
-      take: 2,
       include: {
         rollups: {
           orderBy: { totalOffers: "desc" },
@@ -27,8 +26,21 @@ export default async function MarketPage() {
       : Promise.resolve(null),
   ]);
 
-  const latestSnapshot = snapshots[0] ?? null;
-  const previousSnapshot = snapshots[1] ?? null;
+  const previousSnapshot =
+    latestSnapshot?.sourceQueryHash == null
+      ? null
+      : await prisma.marketSnapshot.findFirst({
+          where: {
+            sourceQueryHash: latestSnapshot.sourceQueryHash,
+            id: {
+              not: latestSnapshot.id,
+            },
+          },
+          orderBy: { capturedAt: "desc" },
+          include: {
+            rollups: true,
+          },
+        });
   const previousMap = new Map(
     (previousSnapshot?.rollups ?? []).map((rollup) => [rollup.gpuName, rollup]),
   );
