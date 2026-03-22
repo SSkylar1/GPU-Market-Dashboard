@@ -1,0 +1,46 @@
+name: Market Pipeline
+
+on:
+  schedule:
+    - cron: '*/30 * * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: market-pipeline
+  cancel-in-progress: false
+
+jobs:
+  collect-and-recompute:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      VAST_API_KEY: ${{ secrets.VAST_API_KEY }}
+      VAST_API_URL: ${{ secrets.VAST_API_URL }}
+      VAST_API_METHOD: ${{ secrets.VAST_API_METHOD }}
+      VAST_REQUEST_JSON: ${{ secrets.VAST_REQUEST_JSON }}
+      INGEST_MODE: vast
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npm run db:generate
+
+      - name: Run collection
+        run: npm run collect
+
+      - name: Recompute rollups and trend aggregates
+        run: npm run recompute
+
+      - name: Print pipeline status
+        run: npm run status

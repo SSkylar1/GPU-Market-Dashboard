@@ -27,6 +27,8 @@ model Offer {
   id               String   @id @default(cuid())
   snapshotId       String
   offerId          String
+  hostId           Int?
+  machineId        Int?
   gpuName          String
   numGpus          Int      @default(1)
   gpuRamGb         Int?
@@ -48,6 +50,8 @@ model Offer {
   @@index([snapshotId])
   @@index([gpuName])
   @@index([offerId])
+  @@index([hostId])
+  @@index([machineId])
   @@index([rentable])
   @@index([rented])
 }

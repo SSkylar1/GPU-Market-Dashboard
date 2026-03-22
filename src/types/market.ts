@@ -4,6 +4,9 @@ export type GpuRollupView = {
   rentableOffers: number;
   rentedOffers: number;
   impliedUtilization: number;
+  observedRentedShare?: number;
+  distinctHostCount?: number;
+  distinctMachineCount?: number;
   medianPrice: number | null;
   minPrice: number | null;
   p90Price: number | null;
@@ -17,10 +20,20 @@ export type GpuTrendPoint = {
   rentableOffers: number;
   rentedOffers: number;
   impliedUtilization: number;
+  observedRentedShare?: number;
   availabilityRatio: number;
   minPrice: number | null;
   medianPrice: number | null;
   p90Price: number | null;
+};
+
+export type HostMachineBreakdown = {
+  hostId: number | null;
+  machineId: number | null;
+  totalOffers: number;
+  rentableOffers: number;
+  rentedOffers: number;
+  medianPrice: number | null;
 };
 
 export type PriceBands = {

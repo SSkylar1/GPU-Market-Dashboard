@@ -3,6 +3,8 @@ import type { Prisma } from "@/generated/prisma/client";
 
 export type NormalizedOffer = {
   offerId: string;
+  hostId: number | null;
+  machineId: number | null;
   gpuName: string;
   numGpus: number;
   gpuRamGb: number | null;
@@ -83,6 +85,8 @@ function normalizeOffer(raw: unknown, index: number): NormalizedOffer | null {
 
   const offerId =
     String(record.id ?? record.offer_id ?? record.offerId ?? `${gpuName.toLowerCase()}-${index}`);
+  const rawHostId = pickFirstNumber(record.host_id, record.hostId);
+  const rawMachineId = pickFirstNumber(record.machine_id, record.machineId);
 
   const numGpus = pickFirstNumber(
     record.num_gpus,
@@ -97,6 +101,8 @@ function normalizeOffer(raw: unknown, index: number): NormalizedOffer | null {
 
   return {
     offerId,
+    hostId: rawHostId == null ? null : Math.trunc(rawHostId),
+    machineId: rawMachineId == null ? null : Math.trunc(rawMachineId),
     gpuName,
     numGpus: Math.max(1, Math.trunc(numGpus ?? 1)),
     gpuRamGb: pickFirstNumber(record.gpu_ram, record.gpuRamGb, gpu.ram_gb, gpu.ram),
@@ -135,8 +141,6 @@ export async function collectVastOffers(): Promise<NormalizedOffer[]> {
     limit: 100,
     type: "on-demand",
     verified: { eq: true },
-    rentable: { eq: true },
-    rented: { eq: false },
   };
 
   let body: string | undefined;

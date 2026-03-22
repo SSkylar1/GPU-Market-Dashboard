@@ -7,6 +7,8 @@ import { collectVastOffers } from "../src/lib/vast/collector";
 
 type SnapshotOfferInput = {
   offerId: string;
+  hostId?: number | null;
+  machineId?: number | null;
   gpuName: string;
   numGpus: number;
   gpuRamGb: number | null;
@@ -26,6 +28,8 @@ type SnapshotOfferInput = {
 const mockOffers: SnapshotOfferInput[] = [
   {
     offerId: "vast-mock-rtx4000ada-1",
+    hostId: 1101,
+    machineId: 2101,
     gpuName: "RTX 4000 Ada",
     numGpus: 1,
     gpuRamGb: 20,
@@ -36,6 +40,8 @@ const mockOffers: SnapshotOfferInput[] = [
   },
   {
     offerId: "vast-mock-rtx4000ada-2",
+    hostId: 1102,
+    machineId: 2102,
     gpuName: "RTX 4000 Ada",
     numGpus: 1,
     gpuRamGb: 20,
@@ -46,6 +52,8 @@ const mockOffers: SnapshotOfferInput[] = [
   },
   {
     offerId: "vast-mock-l4-1",
+    hostId: 1201,
+    machineId: 2201,
     gpuName: "NVIDIA L4",
     numGpus: 1,
     gpuRamGb: 24,
@@ -56,6 +64,8 @@ const mockOffers: SnapshotOfferInput[] = [
   },
   {
     offerId: "vast-mock-l4-2",
+    hostId: 1202,
+    machineId: 2202,
     gpuName: "NVIDIA L4",
     numGpus: 1,
     gpuRamGb: 24,
@@ -100,8 +110,6 @@ function getSourceQueryProfile(mode: string): Prisma.InputJsonValue {
           limit: 100,
           type: "on-demand",
           verified: { eq: true },
-          rentable: { eq: true },
-          rented: { eq: false },
         }),
     } as Prisma.InputJsonValue;
   }
@@ -130,6 +138,8 @@ async function main() {
       offers: {
         create: offers.map((offer) => ({
           offerId: offer.offerId,
+          hostId: offer.hostId,
+          machineId: offer.machineId,
           gpuName: offer.gpuName,
           numGpus: offer.numGpus,
           gpuRamGb: offer.gpuRamGb,
