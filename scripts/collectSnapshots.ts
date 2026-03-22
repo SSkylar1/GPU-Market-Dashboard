@@ -104,6 +104,8 @@ function getSourceQueryProfile(mode: string): Prisma.InputJsonValue {
     return {
       endpoint: process.env.VAST_API_URL ?? "https://console.vast.ai/api/v0/bundles/",
       method: (process.env.VAST_API_METHOD ?? "POST").toUpperCase(),
+      activeLeasesEndpoint: process.env.VAST_ACTIVE_LEASES_URL ?? null,
+      activeLeasesMethod: (process.env.VAST_ACTIVE_LEASES_METHOD ?? "GET").toUpperCase(),
       requestJson:
         process.env.VAST_REQUEST_JSON ??
         JSON.stringify({

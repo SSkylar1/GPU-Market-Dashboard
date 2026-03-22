@@ -4,6 +4,10 @@ export type GpuRollupView = {
   rentableOffers: number;
   rentedOffers: number;
   impliedUtilization: number;
+  availableShare?: number;
+  unavailableShare?: number;
+  activeLeaseShare?: number;
+  leaseSignalShare?: number;
   observedRentedShare?: number;
   distinctHostCount?: number;
   distinctMachineCount?: number;
@@ -20,6 +24,10 @@ export type GpuTrendPoint = {
   rentableOffers: number;
   rentedOffers: number;
   impliedUtilization: number;
+  availableShare?: number;
+  unavailableShare?: number;
+  activeLeaseShare?: number;
+  leaseSignalShare?: number;
   observedRentedShare?: number;
   availabilityRatio: number;
   minPrice: number | null;

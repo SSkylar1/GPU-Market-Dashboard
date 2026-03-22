@@ -21,6 +21,12 @@ export type NormalizedOffer = {
   rawJson: Prisma.InputJsonValue;
 };
 
+type ActiveLeaseLookup = {
+  activeOfferIds: Set<string>;
+  activeMachineIds: Set<number>;
+  source: "secondary-endpoint" | "offer-payload-only";
+};
+
 const rawResponseSchema = z.union([
   z.array(z.unknown()),
   z.object({
@@ -66,6 +72,77 @@ function pickFirstBoolean(...values: unknown[]): boolean | null {
 
 function asRecord(value: unknown): Record<string, unknown> {
   return typeof value === "object" && value !== null ? (value as Record<string, unknown>) : {};
+}
+
+function collectRows(payload: unknown): unknown[] {
+  if (Array.isArray(payload)) return payload;
+  const record = asRecord(payload);
+  if (Array.isArray(record.offers)) return record.offers;
+  if (Array.isArray(record.instances)) return record.instances;
+  if (Array.isArray(record.results)) return record.results;
+  if (record.offers != null) return [record.offers];
+  if (record.instances != null) return [record.instances];
+  if (record.results != null) return [record.results];
+  return [];
+}
+
+async function collectActiveLeaseLookupFromEndpoint(
+  headers: Record<string, string>,
+): Promise<ActiveLeaseLookup | null> {
+  const endpoint = process.env.VAST_ACTIVE_LEASES_URL?.trim();
+  if (!endpoint) return null;
+
+  try {
+    new URL(endpoint);
+  } catch {
+    throw new Error(
+      `Invalid VAST_ACTIVE_LEASES_URL: "${endpoint}". Provide a full URL or unset it.`,
+    );
+  }
+
+  const method = (process.env.VAST_ACTIVE_LEASES_METHOD?.trim() || "GET").toUpperCase();
+  let body: string | undefined;
+  if (method !== "GET") {
+    body = process.env.VAST_ACTIVE_LEASES_REQUEST_JSON?.trim() || undefined;
+  }
+
+  const response = await fetch(endpoint, {
+    method,
+    headers: body ? { ...headers, "Content-Type": "application/json" } : headers,
+    body,
+    signal: AbortSignal.timeout(15000),
+    cache: "no-store",
+  });
+
+  if (!response.ok) {
+    throw new Error(
+      `Active leases API request failed (${response.status} ${response.statusText})`,
+    );
+  }
+
+  const payload = (await response.json()) as unknown;
+  const rows = collectRows(payload);
+
+  const activeOfferIds = new Set<string>();
+  const activeMachineIds = new Set<number>();
+  for (const row of rows) {
+    const record = asRecord(row);
+    const offerIdRaw = record.offer_id ?? record.offerId ?? record.id ?? record.ask_contract_id;
+    const machineIdRaw = record.machine_id ?? record.machineId;
+    if (offerIdRaw != null) {
+      activeOfferIds.add(String(offerIdRaw));
+    }
+    const machineId = parseNumber(machineIdRaw);
+    if (machineId != null) {
+      activeMachineIds.add(Math.trunc(machineId));
+    }
+  }
+
+  return {
+    activeOfferIds,
+    activeMachineIds,
+    source: "secondary-endpoint",
+  };
 }
 
 function normalizeOffer(raw: unknown, index: number): NormalizedOffer | null {
@@ -178,8 +255,29 @@ export async function collectVastOffers(): Promise<NormalizedOffer[]> {
     : Array.isArray(parsed.offers)
       ? parsed.offers
       : [parsed.offers];
-
-  return rows
+  const normalized = rows
     .map((row, index) => normalizeOffer(row, index))
     .filter((row): row is NormalizedOffer => row !== null);
+
+  const endpointLeaseLookup = await collectActiveLeaseLookupFromEndpoint(headers);
+  if (!endpointLeaseLookup) {
+    return normalized;
+  }
+
+  return normalized.map((offer) => {
+    const leasedViaSecondary =
+      endpointLeaseLookup.activeOfferIds.has(offer.offerId) ||
+      (offer.machineId != null &&
+        endpointLeaseLookup.activeMachineIds.has(offer.machineId));
+    if (!leasedViaSecondary) return offer;
+
+    return {
+      ...offer,
+      rented: true,
+      rawJson: {
+        ...(offer.rawJson as Record<string, unknown>),
+        leaseSignalSource: endpointLeaseLookup.source,
+      } as Prisma.InputJsonValue,
+    };
+  });
 }

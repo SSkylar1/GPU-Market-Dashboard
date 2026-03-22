@@ -16,6 +16,15 @@ type ScoringResponse = {
   confidence: {
     level: "low" | "medium" | "high";
     bucketCount: number;
+    score: number;
+    leaseSignalQuality: "low" | "high";
+  };
+  marketSignals: {
+    availableShare: number;
+    unavailableShare: number;
+    activeLeaseShare: number;
+    elasticityAvailPtsPerDollar: number | null;
+    leaseSignalQuality: "low" | "high";
   };
   pricing: {
     aggressive: number;
@@ -317,7 +326,7 @@ export default function ScoringPage() {
           <p>Overall Score: {result.overallScore}</p>
           <p>Recommendation: {result.recommendation}</p>
           <p className={confidenceClass}>
-            Confidence: {result.confidence.level} ({result.confidence.bucketCount} buckets)
+            Confidence: {result.confidence.level} ({result.confidence.score.toFixed(1)}/100, {result.confidence.bucketCount} buckets, lease signal {result.confidence.leaseSignalQuality})
           </p>
 
           <div className="mt-3 grid gap-1 md:grid-cols-2">
@@ -325,6 +334,12 @@ export default function ScoringPage() {
             <p>Competition: {result.competitionScore.toFixed(2)}</p>
             <p>Price Strength: {result.priceStrengthScore.toFixed(2)}</p>
             <p>Efficiency: {result.efficiencyScore.toFixed(2)}</p>
+            <p>Available Share: {(result.marketSignals.availableShare * 100).toFixed(1)}%</p>
+            <p>Unavailable Share: {(result.marketSignals.unavailableShare * 100).toFixed(1)}%</p>
+            <p>Lease Signal Share: {(result.marketSignals.activeLeaseShare * 100).toFixed(1)}%</p>
+            <p>
+              Price Elasticity (avail pts/$): {result.marketSignals.elasticityAvailPtsPerDollar == null ? "-" : result.marketSignals.elasticityAvailPtsPerDollar.toFixed(3)}
+            </p>
             <p>Daily Revenue: ${result.expectedDailyRevenue.toFixed(2)}</p>
             <p>Daily Power Cost: ${result.expectedDailyPowerCost.toFixed(2)}</p>
             <p>Daily Profit: ${result.expectedDailyProfit.toFixed(2)}</p>

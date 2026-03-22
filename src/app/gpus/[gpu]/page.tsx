@@ -119,9 +119,9 @@ export default async function GpuDetailPage({
     <main className="mx-auto w-full max-w-5xl p-6 md:p-10">
       <header className="mb-5">
         <h1 className="text-2xl font-semibold">{gpuName}</h1>
-        <p className="text-sm text-zinc-600">24h UTC half-hour trend (price, utilization, availability ratio).</p>
+        <p className="text-sm text-zinc-600">24h UTC half-hour trend (price and state shares).</p>
         <p className="text-sm text-zinc-600">
-          Implied Utilization = 1 - rentable share. Observed Rented Share = rented/total.
+          Available % = rentable share, Lease Signal % = rented flag share, Unavailable % = non-rentable share.
         </p>
         <Link className="text-sm text-blue-700 underline" href="/market">
           Back to Market
@@ -141,9 +141,9 @@ export default async function GpuDetailPage({
                 <th className="px-4 py-3 font-medium">Source</th>
                 <th className="px-4 py-3 font-medium">Snapshots</th>
                 <th className="px-4 py-3 font-medium">Total</th>
-                <th className="px-4 py-3 font-medium">Utilization</th>
-                <th className="px-4 py-3 font-medium">Observed Rented Share</th>
-                <th className="px-4 py-3 font-medium">Availability</th>
+                <th className="px-4 py-3 font-medium">Unavailable %</th>
+                <th className="px-4 py-3 font-medium">Lease Signal %</th>
+                <th className="px-4 py-3 font-medium">Available %</th>
                 <th className="px-4 py-3 font-medium">Median</th>
                 <th className="px-4 py-3 font-medium">P90</th>
               </tr>
@@ -190,7 +190,7 @@ export default async function GpuDetailPage({
                   <th className="px-4 py-3 font-medium">Machine ID</th>
                   <th className="px-4 py-3 font-medium">Total</th>
                   <th className="px-4 py-3 font-medium">Rentable</th>
-                  <th className="px-4 py-3 font-medium">Rented</th>
+                  <th className="px-4 py-3 font-medium">Lease Signal</th>
                   <th className="px-4 py-3 font-medium">Median Price</th>
                 </tr>
               </thead>

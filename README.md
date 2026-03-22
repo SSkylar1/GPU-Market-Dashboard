@@ -65,6 +65,12 @@ VAST_API_METHOD="POST"
 VAST_API_KEY="your-token"
 # optional JSON body override for POST requests
 VAST_REQUEST_JSON='{"limit":100,"type":"on-demand","verified":{"eq":true}}'
+# optional secondary endpoint for stronger lease-state signal
+VAST_ACTIVE_LEASES_URL="https://console.vast.ai/api/v0/instances/"
+# optional override; defaults to GET
+VAST_ACTIVE_LEASES_METHOD="GET"
+# optional JSON body override when method is not GET
+VAST_ACTIVE_LEASES_REQUEST_JSON='{}'
 ```
 
 ## Recompute GPU rollups

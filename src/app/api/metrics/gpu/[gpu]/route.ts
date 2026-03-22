@@ -144,6 +144,9 @@ export async function GET(
     gpuName,
     points: history.map((point) => ({
       ...point,
+      availableShare: point.availabilityRatio,
+      unavailableShare: point.impliedUtilization,
+      leaseSignalShare: point.totalOffers === 0 ? 0 : point.rentedOffers / point.totalOffers,
       observedRentedShare: point.totalOffers === 0 ? 0 : point.rentedOffers / point.totalOffers,
     })),
     latestHostMachineBreakdown: hostMachineBreakdown,
