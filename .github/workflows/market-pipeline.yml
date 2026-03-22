@@ -16,9 +16,6 @@ jobs:
     env:
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
       VAST_API_KEY: ${{ secrets.VAST_API_KEY }}
-      VAST_API_URL: ${{ secrets.VAST_API_URL }}
-      VAST_API_METHOD: ${{ secrets.VAST_API_METHOD }}
-      VAST_REQUEST_JSON: ${{ secrets.VAST_REQUEST_JSON }}
       INGEST_MODE: vast
     steps:
       - name: Checkout

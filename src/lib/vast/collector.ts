@@ -126,8 +126,16 @@ function normalizeOffer(raw: unknown, index: number): NormalizedOffer | null {
 }
 
 export async function collectVastOffers(): Promise<NormalizedOffer[]> {
-  const endpoint = process.env.VAST_API_URL ?? "https://console.vast.ai/api/v0/bundles/";
-  const method = (process.env.VAST_API_METHOD ?? "POST").toUpperCase();
+  const endpoint =
+    process.env.VAST_API_URL?.trim() || "https://console.vast.ai/api/v0/bundles/";
+  const method = (process.env.VAST_API_METHOD?.trim() || "POST").toUpperCase();
+  try {
+    new URL(endpoint);
+  } catch {
+    throw new Error(
+      `Invalid VAST_API_URL: "${endpoint}". Set VAST_API_URL to a full URL or unset it to use default.`,
+    );
+  }
 
   const headers: Record<string, string> = {
     Accept: "application/json",

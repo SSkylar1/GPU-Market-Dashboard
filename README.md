@@ -107,6 +107,8 @@ Set these repository secrets in GitHub (`Settings` -> `Secrets and variables` ->
 - `VAST_API_METHOD` (optional, defaults in app code)
 - `VAST_REQUEST_JSON` (optional)
 
+For the provided workflow, only `DATABASE_URL` and `VAST_API_KEY` are used by default. Keep optional override secrets unset unless you need custom endpoint/query behavior.
+
 Important:
 
 - GitHub-hosted runners must be able to reach your Postgres host from the public internet.
