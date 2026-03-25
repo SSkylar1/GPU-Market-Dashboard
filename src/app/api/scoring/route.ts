@@ -1,9 +1,12 @@
 import { z } from "zod";
 import { prisma } from "@/lib/db/prisma";
 import { scoreScenarioWithMarket } from "@/lib/scoring/marketScore";
+import { estimatePowerAndCost } from "@/lib/scoring/hardwareDefaults";
 
 const inputSchema = z.object({
   gpuName: z.string().min(1),
+  cohortNumGpus: z.number().int().positive().optional(),
+  cohortOfferType: z.string().optional(),
   gpuCount: z.number().int().positive(),
   assumedPowerWatts: z.number().int().positive(),
   assumedHardwareCost: z.number().positive(),
@@ -33,36 +36,17 @@ export async function POST(request: Request) {
   }
 }
 
-function estimatePowerAndCost(gpuName: string): { assumedPowerWatts: number; assumedHardwareCost: number } {
-  const upper = gpuName.toUpperCase();
-
-  if (upper.includes("H200")) return { assumedPowerWatts: 700, assumedHardwareCost: 30000 };
-  if (upper.includes("H100")) return { assumedPowerWatts: 700, assumedHardwareCost: 25000 };
-  if (upper.includes("A100")) return { assumedPowerWatts: 400, assumedHardwareCost: 12000 };
-  if (upper.includes("A40")) return { assumedPowerWatts: 300, assumedHardwareCost: 4500 };
-  if (upper.includes("L4")) return { assumedPowerWatts: 80, assumedHardwareCost: 2200 };
-  if (upper.includes("5090")) return { assumedPowerWatts: 575, assumedHardwareCost: 2600 };
-  if (upper.includes("5080")) return { assumedPowerWatts: 420, assumedHardwareCost: 1800 };
-  if (upper.includes("5070")) return { assumedPowerWatts: 300, assumedHardwareCost: 1200 };
-  if (upper.includes("5060")) return { assumedPowerWatts: 220, assumedHardwareCost: 800 };
-  if (upper.includes("4090")) return { assumedPowerWatts: 450, assumedHardwareCost: 2500 };
-  if (upper.includes("4080")) return { assumedPowerWatts: 320, assumedHardwareCost: 1400 };
-  if (upper.includes("4070")) return { assumedPowerWatts: 285, assumedHardwareCost: 900 };
-  if (upper.includes("3090")) return { assumedPowerWatts: 350, assumedHardwareCost: 700 };
-  return { assumedPowerWatts: 350, assumedHardwareCost: 1500 };
-}
-
 export async function GET() {
   const trendClient = (prisma as unknown as {
     gpuTrendAggregate?: {
       findMany: (args: {
         where: { source: string };
-        distinct: ["gpuName"];
-        select: { gpuName: true };
-        orderBy: { gpuName: "asc" };
-      }) => Promise<Array<{ gpuName: string }>>;
+        distinct: ["gpuName", "numGpus", "offerType"];
+        select: { gpuName: true; numGpus: true; offerType: true };
+        orderBy: [{ gpuName: "asc" }, { numGpus: "asc" }, { offerType: "asc" }];
+      }) => Promise<Array<{ gpuName: string; numGpus: number; offerType: string }>>;
       findFirst: (args: {
-        where: { source: string; gpuName: string };
+        where: { source: string; gpuName: string; numGpus: number; offerType: string };
         orderBy: { bucketStartUtc: "desc" };
         select: { medianPrice: true; impliedUtilization: true; bucketStartUtc: true };
       }) => Promise<{
@@ -80,9 +64,9 @@ export async function GET() {
   const source = "vast-live";
   const gpuRows = await trendClient.findMany({
     where: { source },
-    distinct: ["gpuName"],
-    select: { gpuName: true },
-    orderBy: { gpuName: "asc" },
+    distinct: ["gpuName", "numGpus", "offerType"],
+    select: { gpuName: true, numGpus: true, offerType: true },
+    orderBy: [{ gpuName: "asc" }, { numGpus: "asc" }, { offerType: "asc" }],
   });
 
   const gpuOptions = await Promise.all(
@@ -91,6 +75,8 @@ export async function GET() {
         where: {
           source,
           gpuName: row.gpuName,
+          numGpus: row.numGpus,
+          offerType: row.offerType,
         },
         orderBy: { bucketStartUtc: "desc" },
         select: {
@@ -102,6 +88,8 @@ export async function GET() {
 
       return {
         gpuName: row.gpuName,
+        cohortNumGpus: row.numGpus,
+        cohortOfferType: row.offerType,
         source,
         latestMedianPrice: latestPoint?.medianPrice ?? null,
         latestImpliedUtilization: latestPoint?.impliedUtilization ?? null,

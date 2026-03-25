@@ -1,120 +1,90 @@
+import { subDays } from "date-fns";
 import { prisma } from "@/lib/db/prisma";
-import { subDays, subHours } from "date-fns";
+import {
+  buildRecommendation,
+  classifyMarketRegime,
+  computeCompetitionMetrics,
+  computeWindowTrendSummary,
+  estimateExpectedUtilization,
+  estimateRoiContext,
+} from "@/lib/metrics/intelligence";
+import { floorToUtcHalfHour } from "@/lib/metrics/aggregation";
+import { estimatePowerAndCost } from "@/lib/scoring/hardwareDefaults";
 
 type TrendRow = {
+  source: string;
   gpuName: string;
+  numGpus: number;
+  offerType: string;
+  bucketStartUtc: Date;
   totalOffers: number;
   rentableOffers: number;
   rentedOffers: number;
+  minPrice: number | null;
+  p10Price: number | null;
   medianPrice: number | null;
+  p90Price: number | null;
+  newOfferCount: number | null;
+  disappearedOfferCount: number | null;
+  newOfferRate: number | null;
+  disappearedRate: number | null;
+  netSupplyChange: number | null;
+  medianPriceChange: number | null;
+  rentableShareChange: number | null;
+  marketPressureScore: number | null;
+  marketPressurePriceComponent: number | null;
+  marketPressureChurnComponent: number | null;
+  marketPressureSupplyComponent: number | null;
+  marketPressureAvailabilityComponent: number | null;
+  lowBandDisappearedCount: number | null;
+  midBandDisappearedCount: number | null;
+  highBandDisappearedCount: number | null;
+  lowBandDisappearedRate: number | null;
+  midBandDisappearedRate: number | null;
+  highBandDisappearedRate: number | null;
 };
 
-function mean(values: number[]): number {
-  if (values.length === 0) return 0;
-  return values.reduce((acc, value) => acc + value, 0) / values.length;
-}
-
-function clamp(value: number, min = 0, max = 100): number {
-  return Math.max(min, Math.min(max, value));
-}
-
-function slope(xs: number[], ys: number[]): number | null {
-  if (xs.length < 3 || ys.length < 3 || xs.length !== ys.length) return null;
-  const xMean = mean(xs);
-  const yMean = mean(ys);
-  let num = 0;
-  let den = 0;
-  for (let i = 0; i < xs.length; i += 1) {
-    const dx = xs[i] - xMean;
-    const dy = ys[i] - yMean;
-    num += dx * dy;
-    den += dx * dx;
-  }
-  if (den === 0) return null;
-  return num / den;
-}
-
-function computeWindowStats(rows: TrendRow[], hasSecondaryLeaseSignal: boolean) {
-  const bucketCount = rows.length;
-  if (bucketCount === 0) {
-    return {
-      bucketCount: 0,
-      avgTotalOffers: 0,
-      avgAvailableOffers: 0,
-      unavailableShare: 0,
-      activeLeaseShare: 0,
-      medianOfBucketMedians: null as number | null,
-      availabilityElasticityPerDollar: null as number | null,
-      confidenceScore: 0,
-    };
-  }
-
-  const totalOffers = rows.reduce((acc, row) => acc + row.totalOffers, 0);
-  const availableOffers = rows.reduce((acc, row) => acc + row.rentableOffers, 0);
-  const activeLeaseOffers = rows.reduce((acc, row) => acc + row.rentedOffers, 0);
-
-  const medianPrices = rows
-    .map((row) => row.medianPrice)
-    .filter((value): value is number => value != null)
-    .sort((a, b) => a - b);
-
-  const medianOfBucketMedians =
-    medianPrices.length === 0
-      ? null
-      : medianPrices[Math.ceil(medianPrices.length * 0.5) - 1];
-
-  const elasticityRows = rows
-    .filter((row) => row.totalOffers > 0 && row.medianPrice != null)
-    .map((row) => ({
-      price: row.medianPrice as number,
-      availableShare: row.rentableOffers / row.totalOffers,
-    }));
-
-  const elasticity = slope(
-    elasticityRows.map((row) => row.price),
-    elasticityRows.map((row) => row.availableShare),
-  );
-
-  const unavailableShare = totalOffers === 0 ? 0 : 1 - availableOffers / totalOffers;
-  const activeLeaseShare = totalOffers === 0 ? 0 : activeLeaseOffers / totalOffers;
-  const availableShare = totalOffers === 0 ? 0 : availableOffers / totalOffers;
-  const coverageShare = Math.min(1, availableShare + activeLeaseShare);
-
-  const bucketScore = clamp((bucketCount / 48) * 100);
-  const coverageScore = clamp(coverageShare * 100);
-  const leaseSignalScore = hasSecondaryLeaseSignal ? 100 : 35;
-  const confidenceScore = clamp(bucketScore * 0.45 + coverageScore * 0.35 + leaseSignalScore * 0.2);
-
-  return {
-    bucketCount,
-    avgTotalOffers: totalOffers / bucketCount,
-    avgAvailableOffers: availableOffers / bucketCount,
-    unavailableShare,
-    activeLeaseShare,
-    medianOfBucketMedians,
-    availabilityElasticityPerDollar: elasticity == null ? null : elasticity * 100,
-    confidenceScore,
-  };
+function cohortKey(gpuName: string, numGpus: number, offerType: string) {
+  return `${gpuName}::${numGpus}::${offerType || "unknown"}`;
 }
 
 export async function GET() {
   const trendClient = (prisma as unknown as {
     gpuTrendAggregate?: {
-      findFirst: (args: {
-        orderBy: { bucketStartUtc: "desc" };
-        select: { bucketStartUtc: true };
-      }) => Promise<{ bucketStartUtc: Date } | null>;
+      findFirst: (args: { orderBy: { bucketStartUtc: "desc" }; select: { bucketStartUtc: true } }) => Promise<{ bucketStartUtc: Date } | null>;
       findMany: (args: {
-        where: {
-          source: string;
-          bucketStartUtc: { gte: Date };
-        };
+        where: { source: string; bucketStartUtc: { gte: Date } };
         select: {
+          source: true;
           gpuName: true;
+          numGpus: true;
+          offerType: true;
+          bucketStartUtc: true;
           totalOffers: true;
           rentableOffers: true;
           rentedOffers: true;
+          minPrice: true;
+          p10Price: true;
           medianPrice: true;
+          p90Price: true;
+          newOfferCount: true;
+          disappearedOfferCount: true;
+          newOfferRate: true;
+          disappearedRate: true;
+          netSupplyChange: true;
+          medianPriceChange: true;
+          rentableShareChange: true;
+          marketPressureScore: true;
+          marketPressurePriceComponent: true;
+          marketPressureChurnComponent: true;
+          marketPressureSupplyComponent: true;
+          marketPressureAvailabilityComponent: true;
+          lowBandDisappearedCount: true;
+          midBandDisappearedCount: true;
+          highBandDisappearedCount: true;
+          lowBandDisappearedRate: true;
+          midBandDisappearedRate: true;
+          highBandDisappearedRate: true;
         };
       }) => Promise<TrendRow[]>;
     };
@@ -127,13 +97,16 @@ export async function GET() {
         offers: {
           select: {
             gpuName: true,
+            numGpus: true,
+            offerType: true,
             hostId: true,
             machineId: true,
+            reliabilityScore: true,
           },
         },
         rollups: {
           orderBy: { totalOffers: "desc" },
-          take: 50,
+          take: 100,
         },
       },
     }),
@@ -149,20 +122,13 @@ export async function GET() {
     latestSnapshot?.sourceQueryHash == null
       ? null
       : await prisma.marketSnapshot.findFirst({
-          where: {
-            sourceQueryHash: latestSnapshot.sourceQueryHash,
-            id: {
-              not: latestSnapshot.id,
-            },
-          },
+          where: { sourceQueryHash: latestSnapshot.sourceQueryHash, id: { not: latestSnapshot.id } },
           orderBy: { capturedAt: "desc" },
-          include: {
-            rollups: true,
-          },
+          include: { rollups: true },
         });
 
   const previousMap = new Map(
-    (previousSnapshot?.rollups ?? []).map((rollup) => [rollup.gpuName, rollup]),
+    (previousSnapshot?.rollups ?? []).map((rollup) => [cohortKey(rollup.gpuName, rollup.numGpus, rollup.offerType), rollup]),
   );
 
   const sourceQueryRecord =
@@ -174,115 +140,171 @@ export async function GET() {
     typeof sourceQueryRecord.activeLeasesEndpoint === "string" &&
     sourceQueryRecord.activeLeasesEndpoint.trim().length > 0;
 
-  const supplyMap = new Map<string, { hostIds: Set<number>; machineIds: Set<number> }>();
-  for (const offer of latestSnapshot?.offers ?? []) {
-    const current = supplyMap.get(offer.gpuName) ?? {
-      hostIds: new Set<number>(),
-      machineIds: new Set<number>(),
-    };
-    if (offer.hostId != null) {
-      current.hostIds.add(offer.hostId);
-    }
-    if (offer.machineId != null) {
-      current.machineIds.add(offer.machineId);
-    }
-    supplyMap.set(offer.gpuName, current);
-  }
+  const latestBucketStartUtc =
+    latestAggregateBucket?.bucketStartUtc ??
+    (latestSnapshot ? floorToUtcHalfHour(latestSnapshot.capturedAt) : null);
 
-  const start24h = latestSnapshot ? subHours(latestSnapshot.capturedAt, 24) : subHours(new Date(), 24);
-  const start7d = latestSnapshot ? subDays(latestSnapshot.capturedAt, 7) : subDays(new Date(), 7);
+  const since7d = latestSnapshot ? subDays(latestSnapshot.capturedAt, 7) : subDays(new Date(), 7);
 
-  const [rows24h, rows7d] =
+  const trendRows =
     trendClient && latestSnapshot
-      ? await Promise.all([
-          trendClient.findMany({
-            where: {
-              source: latestSnapshot.source,
-              bucketStartUtc: { gte: start24h },
-            },
-            select: {
-              gpuName: true,
-              totalOffers: true,
-              rentableOffers: true,
-              rentedOffers: true,
-              medianPrice: true,
-            },
-          }),
-          trendClient.findMany({
-            where: {
-              source: latestSnapshot.source,
-              bucketStartUtc: { gte: start7d },
-            },
-            select: {
-              gpuName: true,
-              totalOffers: true,
-              rentableOffers: true,
-              rentedOffers: true,
-              medianPrice: true,
-            },
-          }),
-        ])
-      : [[], []];
+      ? await trendClient.findMany({
+          where: { source: latestSnapshot.source, bucketStartUtc: { gte: since7d } },
+          select: {
+            source: true,
+            gpuName: true,
+            numGpus: true,
+            offerType: true,
+            bucketStartUtc: true,
+            totalOffers: true,
+            rentableOffers: true,
+            rentedOffers: true,
+            minPrice: true,
+            p10Price: true,
+            medianPrice: true,
+            p90Price: true,
+            newOfferCount: true,
+            disappearedOfferCount: true,
+            newOfferRate: true,
+            disappearedRate: true,
+            netSupplyChange: true,
+            medianPriceChange: true,
+            rentableShareChange: true,
+            marketPressureScore: true,
+            marketPressurePriceComponent: true,
+            marketPressureChurnComponent: true,
+            marketPressureSupplyComponent: true,
+            marketPressureAvailabilityComponent: true,
+            lowBandDisappearedCount: true,
+            midBandDisappearedCount: true,
+            highBandDisappearedCount: true,
+            lowBandDisappearedRate: true,
+            midBandDisappearedRate: true,
+            highBandDisappearedRate: true,
+          },
+        })
+      : [];
 
-  const grouped24h = new Map<string, TrendRow[]>();
-  for (const row of rows24h) {
-    const current = grouped24h.get(row.gpuName) ?? [];
+  const trendByCohort = new Map<string, TrendRow[]>();
+  for (const row of trendRows) {
+    const key = cohortKey(row.gpuName, row.numGpus, row.offerType);
+    const current = trendByCohort.get(key) ?? [];
     current.push(row);
-    grouped24h.set(row.gpuName, current);
+    trendByCohort.set(key, current);
+  }
+  for (const points of trendByCohort.values()) {
+    points.sort((a, b) => a.bucketStartUtc.getTime() - b.bucketStartUtc.getTime());
   }
 
-  const grouped7d = new Map<string, TrendRow[]>();
-  for (const row of rows7d) {
-    const current = grouped7d.get(row.gpuName) ?? [];
-    current.push(row);
-    grouped7d.set(row.gpuName, current);
+  const offerByCohort = new Map<
+    string,
+    Array<{ hostId: number | null; machineId: number | null; reliabilityScore: number | null }>
+  >();
+  for (const offer of latestSnapshot?.offers ?? []) {
+    const key = cohortKey(offer.gpuName, offer.numGpus, offer.offerType?.trim().toLowerCase() || "unknown");
+    const current = offerByCohort.get(key) ?? [];
+    current.push({
+      hostId: offer.hostId,
+      machineId: offer.machineId,
+      reliabilityScore: offer.reliabilityScore,
+    });
+    offerByCohort.set(key, current);
   }
 
-  const stats24h = new Map<string, ReturnType<typeof computeWindowStats>>();
-  for (const [gpuName, rows] of grouped24h.entries()) {
-    stats24h.set(gpuName, computeWindowStats(rows, hasSecondaryLeaseSignal));
-  }
+  const rollups = (latestSnapshot?.rollups ?? []).map((rollup) => {
+    const key = cohortKey(rollup.gpuName, rollup.numGpus, rollup.offerType);
+    const previous = previousMap.get(key);
+    const points = trendByCohort.get(key) ?? [];
+    const latestPoint = points.length === 0 ? null : points[points.length - 1];
 
-  const stats7d = new Map<string, ReturnType<typeof computeWindowStats>>();
-  for (const [gpuName, rows] of grouped7d.entries()) {
-    stats7d.set(gpuName, computeWindowStats(rows, hasSecondaryLeaseSignal));
-  }
+    const trend6h = latestBucketStartUtc ? computeWindowTrendSummary(points, latestBucketStartUtc, "6h") : null;
+    const trend24h = latestBucketStartUtc
+      ? computeWindowTrendSummary(points, latestBucketStartUtc, "24h")
+      : null;
+    const trend7d = latestBucketStartUtc ? computeWindowTrendSummary(points, latestBucketStartUtc, "7d") : null;
 
-  const rollupsWithDelta = (latestSnapshot?.rollups ?? []).map((rollup) => {
-    const previous = previousMap.get(rollup.gpuName);
-    const supply = supplyMap.get(rollup.gpuName);
-    const availableShare =
-      rollup.totalOffers === 0 ? 0 : rollup.rentableOffers / rollup.totalOffers;
-    const leaseSignalShare =
-      rollup.totalOffers === 0 ? 0 : rollup.rentedOffers / rollup.totalOffers;
+    const competition = computeCompetitionMetrics(offerByCohort.get(key) ?? []);
+    const defaults = estimatePowerAndCost(rollup.gpuName);
+    const listingPrice = rollup.medianPrice ?? latestPoint?.medianPrice ?? 0;
+    const expectedUtilizationEstimate = estimateExpectedUtilization({
+      disappearedRate: latestPoint?.disappearedRate ?? 0,
+      netSupplyChange: latestPoint?.netSupplyChange ?? 0,
+      visibleSupplyCount: rollup.totalOffers,
+      rentableShare: rollup.totalOffers === 0 ? 0 : rollup.rentableOffers / rollup.totalOffers,
+      listingPricePerHour: listingPrice,
+      medianPrice: latestPoint?.medianPrice ?? rollup.medianPrice,
+      reliabilityScore: competition.avgReliabilityScore,
+    });
 
-    const window24hRaw = stats24h.get(rollup.gpuName) ?? null;
-    const window7dRaw = stats7d.get(rollup.gpuName) ?? null;
-    const window24h =
-      window24hRaw == null
-        ? null
-        : {
-            ...window24hRaw,
-            leaseSignalShare: window24hRaw.activeLeaseShare,
-          };
-    const window7d =
-      window7dRaw == null
-        ? null
-        : {
-            ...window7dRaw,
-            leaseSignalShare: window7dRaw.activeLeaseShare,
-          };
+    const roi = estimateRoiContext({
+      expectedUtilizationEstimate,
+      listingPricePerHour: listingPrice,
+      hardwareCost: defaults.assumedHardwareCost,
+      powerWatts: defaults.assumedPowerWatts,
+    });
+
+    const regime = classifyMarketRegime({
+      disappearedRate: latestPoint?.disappearedRate ?? 0,
+      newOfferRate: latestPoint?.newOfferRate ?? 0,
+      netSupplyChange: latestPoint?.netSupplyChange ?? 0,
+      medianPriceChange: latestPoint?.medianPriceChange ?? 0,
+      rentableShareChange: latestPoint?.rentableShareChange ?? 0,
+      marketPressureScore: latestPoint?.marketPressureScore ?? 0,
+    });
+
+    const recommendation = buildRecommendation({
+      regime,
+      lowBandDisappearedRate: latestPoint?.lowBandDisappearedRate ?? 0,
+      midBandDisappearedRate: latestPoint?.midBandDisappearedRate ?? 0,
+      highBandDisappearedRate: latestPoint?.highBandDisappearedRate ?? 0,
+      topHostShare: competition.topHostShare,
+      marketPressureScore: latestPoint?.marketPressureScore ?? 0,
+    });
 
     return {
       ...rollup,
-      availableShare,
-      unavailableShare: rollup.impliedUtilization,
-      leaseSignalShare,
+      p10Price: latestPoint?.p10Price ?? null,
+      availableShare: rollup.totalOffers === 0 ? 0 : rollup.rentableOffers / rollup.totalOffers,
+      unavailableShareProxy: rollup.impliedUtilization,
+      leaseSignalShare: rollup.totalOffers === 0 ? 0 : rollup.rentedOffers / rollup.totalOffers,
       leaseSignalQuality: hasSecondaryLeaseSignal ? "high" : "low",
-      window24h,
-      window7d,
-      distinctHostCount: supply?.hostIds.size ?? 0,
-      distinctMachineCount: supply?.machineIds.size ?? 0,
+      latestMarketPressure: latestPoint?.marketPressureScore ?? null,
+      marketPressureComponents:
+        latestPoint == null
+          ? null
+          : {
+              churn: latestPoint.marketPressureChurnComponent,
+              supply: latestPoint.marketPressureSupplyComponent,
+              price: latestPoint.marketPressurePriceComponent,
+              availability: latestPoint.marketPressureAvailabilityComponent,
+            },
+      churn: {
+        latestNewOffers: latestPoint?.newOfferCount ?? 0,
+        latestDisappearedOffers: latestPoint?.disappearedOfferCount ?? 0,
+        newOfferRate: latestPoint?.newOfferRate ?? 0,
+        disappearedRate: latestPoint?.disappearedRate ?? 0,
+        netSupplyChange: latestPoint?.netSupplyChange ?? 0,
+      },
+      priceBands: {
+        lowBandDisappearedRate: latestPoint?.lowBandDisappearedRate ?? 0,
+        midBandDisappearedRate: latestPoint?.midBandDisappearedRate ?? 0,
+        highBandDisappearedRate: latestPoint?.highBandDisappearedRate ?? 0,
+        lowBandDisappearedCount: latestPoint?.lowBandDisappearedCount ?? 0,
+        midBandDisappearedCount: latestPoint?.midBandDisappearedCount ?? 0,
+        highBandDisappearedCount: latestPoint?.highBandDisappearedCount ?? 0,
+      },
+      competition,
+      trends: {
+        window6h: trend6h,
+        window24h: trend24h,
+        window7d: trend7d,
+      },
+      regime,
+      recommendationLabel: recommendation.recommendationLabel,
+      recommendationReasonPrimary: recommendation.recommendationReasonPrimary,
+      recommendationReasonSecondary: recommendation.recommendationReasonSecondary,
+      recommendationConfidenceNote: recommendation.recommendationConfidenceNote,
+      roi,
       medianPriceDelta:
         previous?.medianPrice != null && rollup.medianPrice != null
           ? rollup.medianPrice - previous.medianPrice
@@ -293,9 +315,7 @@ export async function GET() {
   });
 
   const freshnessMinutes =
-    latestSnapshot == null
-      ? null
-      : Math.max(0, Math.floor((Date.now() - latestSnapshot.capturedAt.getTime()) / 60000));
+    latestSnapshot == null ? null : Math.max(0, Math.floor((Date.now() - latestSnapshot.capturedAt.getTime()) / 60000));
 
   return Response.json({
     snapshotId: latestSnapshot?.id ?? null,
@@ -304,6 +324,6 @@ export async function GET() {
     latestAggregateBucketUtc: latestAggregateBucket?.bucketStartUtc ?? null,
     freshnessMinutes,
     leaseSignalQuality: hasSecondaryLeaseSignal ? "high" : "low",
-    rollups: rollupsWithDelta,
+    rollups,
   });
 }

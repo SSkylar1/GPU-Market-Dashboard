@@ -21,9 +21,12 @@ type ScoringResponse = {
   };
   marketSignals: {
     availableShare: number;
-    unavailableShare: number;
+    unavailableShareProxy: number;
     activeLeaseShare: number;
-    elasticityAvailPtsPerDollar: number | null;
+    newOfferRate: number;
+    disappearedRate: number;
+    netSupplyChange: number;
+    marketPressureScore: number;
     leaseSignalQuality: "low" | "high";
   };
   pricing: {
@@ -33,10 +36,24 @@ type ScoringResponse = {
   };
   scenarioId: string;
   scenarioScoreId: string;
+  regime: "tight" | "balanced" | "oversupplied";
+  recommendationLabel: "Buy" | "Wait" | "Avoid" | "Race-to-bottom risk";
+  recommendationReasonPrimary: string;
+  recommendationReasonSecondary: string;
+  recommendationConfidenceNote: string;
+  roi: {
+    expectedUtilizationEstimate: number;
+    expectedDailyRevenue: number;
+    estimatedDailyPowerCost: number;
+    estimatedDailyMargin: number;
+    paybackPeriodDays: number | null;
+  };
 };
 
 type FormState = {
   gpuName: string;
+  cohortNumGpus: number;
+  cohortOfferType: string;
   gpuCount: number;
   assumedPowerWatts: number;
   assumedHardwareCost: number;
@@ -48,6 +65,8 @@ type FormState = {
 
 type GpuOption = {
   gpuName: string;
+  cohortNumGpus: number;
+  cohortOfferType: string;
   source: string;
   latestMedianPrice: number | null;
   latestImpliedUtilization: number | null;
@@ -82,6 +101,8 @@ type ScoringMetaResponse = {
 
 const defaultForm: FormState = {
   gpuName: "",
+  cohortNumGpus: 1,
+  cohortOfferType: "unknown",
   gpuCount: 1,
   assumedPowerWatts: 450,
   assumedHardwareCost: 2500,
@@ -114,6 +135,8 @@ export default function ScoringPage() {
           setForm((current) => ({
             ...current,
             gpuName: first.gpuName,
+            cohortNumGpus: first.cohortNumGpus,
+            cohortOfferType: first.cohortOfferType,
             source: first.source,
             gpuCount: first.defaults.gpuCount,
             assumedPowerWatts: first.defaults.assumedPowerWatts,
@@ -133,10 +156,16 @@ export default function ScoringPage() {
     void loadMeta();
   }, []);
 
-  const selectedOption = useMemo(
-    () => gpuOptions.find((option) => option.gpuName === form.gpuName) ?? null,
-    [gpuOptions, form.gpuName],
-  );
+  const selectedOption = useMemo(() => {
+    return (
+      gpuOptions.find(
+        (option) =>
+          option.gpuName === form.gpuName &&
+          option.cohortNumGpus === form.cohortNumGpus &&
+          option.cohortOfferType === form.cohortOfferType,
+      ) ?? null
+    );
+  }, [gpuOptions, form.gpuName, form.cohortNumGpus, form.cohortOfferType]);
 
   const confidenceClass = useMemo(() => {
     if (!result) return "";
@@ -181,16 +210,25 @@ export default function ScoringPage() {
     }));
   }
 
-  function onGpuChange(gpuName: string) {
-    const option = gpuOptions.find((candidate) => candidate.gpuName === gpuName);
+  function onGpuChange(composite: string) {
+    const [gpuName, numGpusRaw, offerType] = composite.split("::");
+    const numGpus = Number(numGpusRaw);
+    const option = gpuOptions.find(
+      (candidate) =>
+        candidate.gpuName === gpuName &&
+        candidate.cohortNumGpus === numGpus &&
+        candidate.cohortOfferType === offerType,
+    );
     if (!option) {
-      setForm((current) => ({ ...current, gpuName }));
+      setForm((current) => ({ ...current, gpuName, cohortNumGpus: numGpus, cohortOfferType: offerType }));
       return;
     }
 
     setForm((current) => ({
       ...current,
       gpuName: option.gpuName,
+      cohortNumGpus: option.cohortNumGpus,
+      cohortOfferType: option.cohortOfferType,
       source: option.source,
       gpuCount: option.defaults.gpuCount,
       assumedPowerWatts: option.defaults.assumedPowerWatts,
@@ -210,13 +248,16 @@ export default function ScoringPage() {
           GPU Name
           <select
             className="rounded border border-zinc-600 bg-zinc-950 px-2 py-1"
-            value={form.gpuName}
+            value={`${form.gpuName}::${form.cohortNumGpus}::${form.cohortOfferType}`}
             onChange={(event) => onGpuChange(event.target.value)}
             disabled={metaLoading || gpuOptions.length === 0}
           >
             {gpuOptions.map((option) => (
-              <option key={option.gpuName} value={option.gpuName}>
-                {option.gpuName}
+              <option
+                key={`${option.gpuName}-${option.cohortNumGpus}-${option.cohortOfferType}`}
+                value={`${option.gpuName}::${option.cohortNumGpus}::${option.cohortOfferType}`}
+              >
+                {option.gpuName} · {option.cohortNumGpus}x · {option.cohortOfferType}
               </option>
             ))}
           </select>
@@ -335,11 +376,18 @@ export default function ScoringPage() {
             <p>Price Strength: {result.priceStrengthScore.toFixed(2)}</p>
             <p>Efficiency: {result.efficiencyScore.toFixed(2)}</p>
             <p>Available Share: {(result.marketSignals.availableShare * 100).toFixed(1)}%</p>
-            <p>Unavailable Share: {(result.marketSignals.unavailableShare * 100).toFixed(1)}%</p>
+            <p>Unavailable Share (Proxy): {(result.marketSignals.unavailableShareProxy * 100).toFixed(1)}%</p>
             <p>Lease Signal Share: {(result.marketSignals.activeLeaseShare * 100).toFixed(1)}%</p>
-            <p>
-              Price Elasticity (avail pts/$): {result.marketSignals.elasticityAvailPtsPerDollar == null ? "-" : result.marketSignals.elasticityAvailPtsPerDollar.toFixed(3)}
-            </p>
+            <p>New Offer Rate: {(result.marketSignals.newOfferRate * 100).toFixed(1)}%</p>
+            <p>Disappeared Rate: {(result.marketSignals.disappearedRate * 100).toFixed(1)}%</p>
+            <p>Net Supply Change: {result.marketSignals.netSupplyChange}</p>
+            <p>Market Pressure Score: {result.marketSignals.marketPressureScore.toFixed(2)}</p>
+            <p>Regime: {result.regime}</p>
+            <p>Recommendation Label: {result.recommendationLabel}</p>
+            <p>Reason: {result.recommendationReasonPrimary}</p>
+            <p>Secondary: {result.recommendationReasonSecondary}</p>
+            <p>Confidence Note: {result.recommendationConfidenceNote}</p>
+            <p>Expected Utilization Estimate: {(result.roi.expectedUtilizationEstimate * 100).toFixed(1)}%</p>
             <p>Daily Revenue: ${result.expectedDailyRevenue.toFixed(2)}</p>
             <p>Daily Power Cost: ${result.expectedDailyPowerCost.toFixed(2)}</p>
             <p>Daily Profit: ${result.expectedDailyProfit.toFixed(2)}</p>

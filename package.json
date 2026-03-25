@@ -13,7 +13,7 @@
     "recompute": "tsx scripts/recomputeMetrics.ts",
     "status": "tsx scripts/pipelineStatus.ts",
     "cron:install": "bash scripts/installCron.sh",
-    "test": "node --import tsx --test tests/metrics.test.ts"
+    "test": "node --import tsx --test tests/*.test.ts"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.5.0",

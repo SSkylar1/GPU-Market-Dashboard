@@ -22,6 +22,7 @@ test("summarizeOffers computes availability ratio and utilization", () => {
   assert.equal(summary.rentedOffers, 2);
   assert.ok(Math.abs(summary.availabilityRatio - 1 / 3) < 1e-12);
   assert.ok(Math.abs(summary.impliedUtilization - 2 / 3) < 1e-12);
+  assert.equal(summary.p10Price, 0.1);
   assert.equal(summary.medianPrice, 0.2);
   assert.equal(summary.p90Price, 0.3);
 });

@@ -18,6 +18,7 @@ model MarketSnapshot {
   offers           Offer[]
   rollups          GpuRollup[]
   trendAggregates  GpuTrendAggregate[]
+  churnAggregates  GpuChurnAggregate[]
 
   @@index([capturedAt])
   @@index([sourceQueryHash])
@@ -31,6 +32,7 @@ model Offer {
   machineId        Int?
   gpuName          String
   numGpus          Int      @default(1)
+  offerType        String?
   gpuRamGb         Int?
   cpuCores         Int?
   ramGb            Int?
@@ -49,6 +51,7 @@ model Offer {
 
   @@index([snapshotId])
   @@index([gpuName])
+  @@index([gpuName, numGpus, offerType])
   @@index([offerId])
   @@index([hostId])
   @@index([machineId])
@@ -56,15 +59,41 @@ model Offer {
   @@index([rented])
 }
 
+model GpuChurnAggregate {
+  id                    String   @id @default(cuid())
+  snapshotId            String
+  previousSnapshotId    String
+  source                String
+  sourceQueryHash       String?
+  gpuName               String
+  numGpus               Int
+  offerType             String   @default("unknown")
+  bucketStartUtc        DateTime
+  newOfferCount         Int
+  disappearedOfferCount Int
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  snapshot MarketSnapshot @relation(fields: [snapshotId], references: [id], onDelete: Cascade)
+
+  @@index([bucketStartUtc])
+  @@index([gpuName, bucketStartUtc])
+  @@index([sourceQueryHash, bucketStartUtc])
+  @@unique([source, gpuName, numGpus, offerType, bucketStartUtc])
+}
+
 model GpuRollup {
   id                 String   @id @default(cuid())
   snapshotId         String
   gpuName            String
+  numGpus            Int      @default(1)
+  offerType          String   @default("unknown")
   totalOffers        Int
   rentableOffers     Int
   rentedOffers       Int
   impliedUtilization Float
   minPrice           Float?
+  p10Price           Float?
   medianPrice        Float?
   p90Price           Float?
   createdAt          DateTime @default(now())
@@ -72,8 +101,8 @@ model GpuRollup {
   snapshot MarketSnapshot @relation(fields: [snapshotId], references: [id], onDelete: Cascade)
 
   @@index([snapshotId])
-  @@index([gpuName])
-  @@unique([snapshotId, gpuName])
+  @@index([gpuName, numGpus, offerType])
+  @@unique([snapshotId, gpuName, numGpus, offerType])
 }
 
 model GpuTrendAggregate {
@@ -81,6 +110,8 @@ model GpuTrendAggregate {
   snapshotId         String
   source             String
   gpuName            String
+  numGpus            Int      @default(1)
+  offerType          String   @default("unknown")
   bucketStartUtc     DateTime
   snapshotCount      Int
   totalOffers        Int
@@ -89,16 +120,35 @@ model GpuTrendAggregate {
   impliedUtilization Float
   availabilityRatio  Float
   minPrice           Float?
+  p10Price           Float?
   medianPrice        Float?
   p90Price           Float?
+  newOfferCount      Int?
+  disappearedOfferCount Int?
+  newOfferRate       Float?
+  disappearedRate    Float?
+  netSupplyChange    Int?
+  medianPriceChange  Float?
+  rentableShareChange Float?
+  marketPressureScore Float?
+  marketPressurePriceComponent Float?
+  marketPressureChurnComponent Float?
+  marketPressureSupplyComponent Float?
+  marketPressureAvailabilityComponent Float?
+  lowBandDisappearedCount Int?
+  midBandDisappearedCount Int?
+  highBandDisappearedCount Int?
+  lowBandDisappearedRate Float?
+  midBandDisappearedRate Float?
+  highBandDisappearedRate Float?
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
 
   snapshot MarketSnapshot @relation(fields: [snapshotId], references: [id], onDelete: Cascade)
 
   @@index([bucketStartUtc])
-  @@index([gpuName, bucketStartUtc])
-  @@unique([gpuName, bucketStartUtc, source])
+  @@index([gpuName, numGpus, offerType, bucketStartUtc])
+  @@unique([gpuName, numGpus, offerType, bucketStartUtc, source])
 }
 
 model HardwareScenario {

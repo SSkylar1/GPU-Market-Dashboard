@@ -11,6 +11,7 @@ type SnapshotOfferInput = {
   machineId?: number | null;
   gpuName: string;
   numGpus: number;
+  offerType?: string | null;
   gpuRamGb: number | null;
   cpuCores?: number | null;
   ramGb?: number | null;
@@ -32,6 +33,7 @@ const mockOffers: SnapshotOfferInput[] = [
     machineId: 2101,
     gpuName: "RTX 4000 Ada",
     numGpus: 1,
+    offerType: "on-demand",
     gpuRamGb: 20,
     rentable: true,
     rented: false,
@@ -44,6 +46,7 @@ const mockOffers: SnapshotOfferInput[] = [
     machineId: 2102,
     gpuName: "RTX 4000 Ada",
     numGpus: 1,
+    offerType: "on-demand",
     gpuRamGb: 20,
     rentable: false,
     rented: true,
@@ -56,6 +59,7 @@ const mockOffers: SnapshotOfferInput[] = [
     machineId: 2201,
     gpuName: "NVIDIA L4",
     numGpus: 1,
+    offerType: "on-demand",
     gpuRamGb: 24,
     rentable: true,
     rented: false,
@@ -68,6 +72,7 @@ const mockOffers: SnapshotOfferInput[] = [
     machineId: 2202,
     gpuName: "NVIDIA L4",
     numGpus: 1,
+    offerType: "on-demand",
     gpuRamGb: 24,
     rentable: false,
     rented: true,
@@ -144,6 +149,7 @@ async function main() {
           machineId: offer.machineId,
           gpuName: offer.gpuName,
           numGpus: offer.numGpus,
+          offerType: offer.offerType,
           gpuRamGb: offer.gpuRamGb,
           cpuCores: offer.cpuCores,
           ramGb: offer.ramGb,

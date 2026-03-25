@@ -1,4 +1,4 @@
-export type Percentile = 0.5 | 0.9;
+export type Percentile = 0.1 | 0.5 | 0.9;
 
 export type OfferLike = {
   rentable: boolean;
@@ -48,6 +48,7 @@ export function summarizeOffers(offers: OfferLike[]) {
     impliedUtilization,
     availabilityRatio,
     minPrice: prices.length > 0 ? prices[0] : null,
+    p10Price: percentile(prices, 0.1),
     medianPrice: percentile(prices, 0.5),
     p90Price: percentile(prices, 0.9),
     prices,

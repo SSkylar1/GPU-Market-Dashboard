@@ -7,6 +7,7 @@ export type NormalizedOffer = {
   machineId: number | null;
   gpuName: string;
   numGpus: number;
+  offerType: string | null;
   gpuRamGb: number | null;
   cpuCores: number | null;
   ramGb: number | null;
@@ -161,7 +162,7 @@ function normalizeOffer(raw: unknown, index: number): NormalizedOffer | null {
   }
 
   const offerId =
-    String(record.id ?? record.offer_id ?? record.offerId ?? `${gpuName.toLowerCase()}-${index}`);
+    String(record.id ?? record.offer_id ?? record.offerId ?? `fallback:${gpuName.toLowerCase()}-${index}`);
   const rawHostId = pickFirstNumber(record.host_id, record.hostId);
   const rawMachineId = pickFirstNumber(record.machine_id, record.machineId);
 
@@ -175,6 +176,16 @@ function normalizeOffer(raw: unknown, index: number): NormalizedOffer | null {
 
   const rentable = pickFirstBoolean(record.rentable, record.is_rentable, record.available);
   const rented = pickFirstBoolean(record.rented, record.is_rented, record.in_use);
+  const isBid = pickFirstBoolean(record.is_bid, record.bid, record.interruptible);
+  const rawType = record.type;
+  const offerType =
+    typeof rawType === "string" && rawType.trim().length > 0
+      ? rawType.trim().toLowerCase()
+      : isBid == null
+        ? null
+        : isBid
+          ? "bid"
+          : "on-demand";
 
   return {
     offerId,
@@ -182,6 +193,7 @@ function normalizeOffer(raw: unknown, index: number): NormalizedOffer | null {
     machineId: rawMachineId == null ? null : Math.trunc(rawMachineId),
     gpuName,
     numGpus: Math.max(1, Math.trunc(numGpus ?? 1)),
+    offerType,
     gpuRamGb: pickFirstNumber(record.gpu_ram, record.gpuRamGb, gpu.ram_gb, gpu.ram),
     cpuCores: pickFirstNumber(record.cpu_cores, record.cpuCores),
     ramGb: pickFirstNumber(record.ram_gb, record.ramGb),
