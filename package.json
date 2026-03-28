@@ -11,6 +11,8 @@
     "db:migrate": "prisma migrate deploy",
     "collect": "tsx scripts/collectSnapshots.ts",
     "recompute": "tsx scripts/recomputeMetrics.ts",
+    "backtest": "tsx scripts/backtestForecasts.ts",
+    "debug:identity": "tsx scripts/debugOfferIdentity.ts",
     "status": "tsx scripts/pipelineStatus.ts",
     "cron:install": "bash scripts/installCron.sh",
     "test": "node --import tsx --test tests/*.test.ts"

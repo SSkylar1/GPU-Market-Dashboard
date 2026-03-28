@@ -25,38 +25,111 @@ model MarketSnapshot {
 }
 
 model Offer {
-  id               String   @id @default(cuid())
-  snapshotId       String
-  offerId          String
-  hostId           Int?
-  machineId        Int?
-  gpuName          String
-  numGpus          Int      @default(1)
-  offerType        String?
-  gpuRamGb         Int?
-  cpuCores         Int?
-  ramGb            Int?
-  diskGb           Int?
-  inetUpMbps       Float?
-  inetDownMbps     Float?
-  rentable         Boolean  @default(false)
-  rented           Boolean  @default(false)
-  verified         Boolean?
-  reliabilityScore Float?
-  pricePerHour     Float?
-  rawJson          Json?
-  createdAt        DateTime @default(now())
+  id                     String   @id @default(cuid())
+  snapshotId             String
+  source                 String
+  capturedAt             DateTime
+  offerId                String
+  offerExternalId        String?
+  offerFingerprint       String?
+  stableOfferFingerprint String?
+  versionFingerprint     String?
+  identityStrategy       String?
+  identityQualityScore   Float?
+  hostId                 Int?
+  machineId              Int?
+  gpuName                String
+  numGpus                Int      @default(1)
+  offerType              String?
+  gpuRamGb               Int?
+  cpuCores               Int?
+  ramGb                  Int?
+  diskGb                 Int?
+  inetUpMbps             Float?
+  inetDownMbps           Float?
+  rentable               Boolean  @default(false)
+  rented                 Boolean  @default(false)
+  verified               Boolean?
+  reliabilityScore       Float?
+  pricePerHour           Float?
+  dlperf                 Float?
+  timeRemaining          Float?
+  geolocation            Json?
+  relativePriceToCohort  Float?
+  rawJson                Json?
+  createdAt              DateTime @default(now())
 
   snapshot MarketSnapshot @relation(fields: [snapshotId], references: [id], onDelete: Cascade)
 
   @@index([snapshotId])
+  @@index([source, capturedAt])
   @@index([gpuName])
   @@index([gpuName, numGpus, offerType])
   @@index([offerId])
+  @@index([offerExternalId])
+  @@index([offerFingerprint])
+  @@index([stableOfferFingerprint])
+  @@index([versionFingerprint])
   @@index([hostId])
   @@index([machineId])
   @@index([rentable])
   @@index([rented])
+}
+
+model OfferLifecycle {
+  id                             String   @id @default(cuid())
+  source                         String
+  offerFingerprint               String
+  stableOfferFingerprint         String?
+  latestVersionFingerprint       String?
+  identityStrategy               String?
+  identityQualityScore           Float?
+  offerExternalId                String?
+  gpuName                        String
+  numGpus                        Int
+  offerType                      String
+  machineId                      Int?
+  hostId                         Int?
+  firstSeenAt                    DateTime
+  lastSeenAt                     DateTime
+  totalVisibleSnapshots          Int
+  totalVisibleHours              Float
+  disappearanceCount             Int
+  reappearanceCount              Int
+  longestContinuousVisibleHours  Float
+  latestKnownPricePerHour        Float?
+  latestKnownReliabilityScore    Float?
+  firstKnownPricePerHour         Float?
+  minObservedPricePerHour        Float?
+  maxObservedPricePerHour        Float?
+  priceEditCount                 Int
+  mutationCount                  Int @default(0)
+  lastStatus                     String
+  createdAt                      DateTime @default(now())
+  updatedAt                      DateTime @updatedAt
+  segments                       OfferLifecycleSegment[]
+
+  @@unique([source, offerFingerprint])
+  @@index([source, gpuName, numGpus, offerType, firstSeenAt])
+}
+
+model OfferLifecycleSegment {
+  id                String   @id @default(cuid())
+  lifecycleId       String
+  segmentStartAt    DateTime
+  segmentEndAt      DateTime?
+  durationHours     Float?
+  endedBy           String
+  startPricePerHour Float?
+  endPricePerHour   Float?
+  medianPricePerHour Float?
+  startRentable     Boolean?
+  endRentable       Boolean?
+  createdAt         DateTime @default(now())
+
+  lifecycle OfferLifecycle @relation(fields: [lifecycleId], references: [id], onDelete: Cascade)
+
+  @@index([lifecycleId, segmentStartAt])
 }
 
 model GpuChurnAggregate {
@@ -106,49 +179,122 @@ model GpuRollup {
 }
 
 model GpuTrendAggregate {
-  id                 String   @id @default(cuid())
-  snapshotId         String
-  source             String
-  gpuName            String
-  numGpus            Int      @default(1)
-  offerType          String   @default("unknown")
-  bucketStartUtc     DateTime
-  snapshotCount      Int
-  totalOffers        Int
-  rentableOffers     Int
-  rentedOffers       Int
-  impliedUtilization Float
-  availabilityRatio  Float
-  minPrice           Float?
-  p10Price           Float?
-  medianPrice        Float?
-  p90Price           Float?
-  newOfferCount      Int?
-  disappearedOfferCount Int?
-  newOfferRate       Float?
-  disappearedRate    Float?
-  netSupplyChange    Int?
-  medianPriceChange  Float?
-  rentableShareChange Float?
-  marketPressureScore Float?
-  marketPressurePriceComponent Float?
-  marketPressureChurnComponent Float?
-  marketPressureSupplyComponent Float?
-  marketPressureAvailabilityComponent Float?
-  lowBandDisappearedCount Int?
-  midBandDisappearedCount Int?
-  highBandDisappearedCount Int?
-  lowBandDisappearedRate Float?
-  midBandDisappearedRate Float?
-  highBandDisappearedRate Float?
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
+  id                                 String   @id @default(cuid())
+  snapshotId                         String
+  source                             String
+  cohortKey                          String
+  gpuName                            String
+  numGpus                            Int?
+  offerType                          String?
+  bucketStartUtc                     DateTime
+  snapshotCount                      Int
+  totalOffers                        Int
+  uniqueMachines                     Int?
+  uniqueHosts                        Int?
+  rentableOffers                     Int
+  rentedOffers                       Int
+  continuingOffers                   Int?
+  newOffers                          Int?
+  disappearedOffers                  Int?
+  reappearedOffers                   Int?
+  persistentDisappearedOffers        Int?
+  newOfferRate                       Float?
+  disappearedRate                    Float?
+  reappearedRate                     Float?
+  persistentDisappearanceRate        Float?
+  machineEntryRate                   Float?
+  machineExitRate                    Float?
+  hostEntryRate                      Float?
+  hostExitRate                       Float?
+  impliedUtilization                 Float
+  availabilityRatio                  Float
+  minPrice                           Float?
+  p10Price                           Float?
+  medianPrice                        Float?
+  p90Price                           Float?
+  maxPrice                           Float?
+  priceCv                            Float?
+  medianPriceChange                  Float?
+  lowBandDisappearedRate             Float?
+  midBandDisappearedRate             Float?
+  highBandDisappearedRate            Float?
+  lowBandPersistentDisappearedRate   Float?
+  midBandPersistentDisappearedRate   Float?
+  highBandPersistentDisappearedRate  Float?
+  supplyTightnessScore               Float?
+  movementScore                      Float?
+  machineDepthScore                  Float?
+  concentrationScore                 Float?
+  cohortPressureScore                Float?
+  pressureAcceleration               Float?
+  pressurePersistence                Float?
+  state                              String?
+  stateConfidence                    Float?
+  dataDepthScore                     Float?
+  noiseScore                         Float?
+  configVsFamilyPressureDelta        Float?
+  configVsFamilyPriceDelta           Float?
+  configVsFamilyHazardDelta          Float?
+  machineConcentrationShareTop1      Float?
+  machineConcentrationShareTop3      Float?
+  hostConcentrationShareTop1         Float?
+  hostConcentrationShareTop3         Float?
+  machinePersistenceRate             Float?
+  hostPersistenceRate                Float?
+  newMachineEntryRate                Float?
+  disappearingMachineRate            Float?
+  temporaryMissingRate               Float?
+  reappearedShortGapRate             Float?
+  reappearedLongGapRate              Float?
+  medianReappearanceDelayBuckets     Float?
+  persistentDisappearanceRateN       Float?
+  churnAdjustedDisappearanceRate     Float?
+  churnScore                         Float?
+  signalStrengthScore                Float?
+  inferabilityScore                  Float?
+  identityQualityScore               Float?
+  createdAt                          DateTime @default(now())
+  updatedAt                          DateTime @updatedAt
 
   snapshot MarketSnapshot @relation(fields: [snapshotId], references: [id], onDelete: Cascade)
 
   @@index([bucketStartUtc])
-  @@index([gpuName, numGpus, offerType, bucketStartUtc])
-  @@unique([gpuName, numGpus, offerType, bucketStartUtc, source])
+  @@index([source, gpuName, bucketStartUtc])
+  @@index([source, gpuName, numGpus, offerType, bucketStartUtc])
+  @@unique([source, cohortKey, bucketStartUtc])
+}
+
+model CohortForecast {
+  id                         String   @id @default(cuid())
+  source                     String
+  gpuName                    String
+  numGpus                    Int?
+  offerType                  String?
+  bucketStartUtc             DateTime
+  forecastHorizonHours       Int
+  pTight                     Float
+  pBalanced                  Float
+  pOversupplied              Float
+  pPriceUp                   Float
+  pPriceFlat                 Float
+  pPriceDown                 Float
+  expectedPressure           Float
+  expectedPressureLow        Float
+  expectedPressureHigh       Float
+  expectedVisibleSupply      Float
+  expectedVisibleSupplyLow   Float
+  expectedVisibleSupplyHigh  Float
+  expectedMedianPrice        Float?
+  expectedMedianPriceLow     Float?
+  expectedMedianPriceHigh    Float?
+  confidenceScore            Float
+  calibrationVersion         String
+  modelVersion               String
+  createdAt                  DateTime @default(now())
+
+  @@index([source, gpuName, bucketStartUtc])
+  @@index([source, gpuName, numGpus, offerType, bucketStartUtc])
+  @@unique([source, gpuName, numGpus, offerType, bucketStartUtc, forecastHorizonHours, modelVersion])
 }
 
 model HardwareScenario {
@@ -162,7 +308,8 @@ model HardwareScenario {
   notes                 String?
   createdAt             DateTime @default(now())
 
-  scores ScenarioScore[]
+  scores            ScenarioScore[]
+  scenarioForecasts ScenarioForecast[]
 
   @@index([gpuName])
 }
@@ -184,4 +331,69 @@ model ScenarioScore {
   scenario HardwareScenario @relation(fields: [scenarioId], references: [id], onDelete: Cascade)
 
   @@index([scenarioId])
+}
+
+model ScenarioForecast {
+  id                                     String   @id @default(cuid())
+  hardwareScenarioId                     String
+  modelVersion                           String
+  source                                 String
+  gpuName                                String
+  numGpus                                Int?
+  offerType                              String?
+  createdAt                              DateTime @default(now())
+  pUtilizationAbove25                    Float
+  pUtilizationAbove50                    Float
+  pUtilizationAbove75                    Float
+  expectedUtilization                    Float
+  expectedUtilizationLow                 Float
+  expectedUtilizationHigh                Float
+  expectedDailyRevenue                   Float
+  expectedDailyRevenueLow                Float
+  expectedDailyRevenueHigh               Float
+  expectedDailyMargin                    Float
+  expectedDailyMarginLow                 Float
+  expectedDailyMarginHigh                Float
+  expectedPaybackMonths                  Float?
+  expectedPaybackMonthsLow               Float?
+  expectedPaybackMonthsHigh              Float?
+  pPaybackWithinTarget                   Float
+  pScenarioOutperformingGpuFamilyMedian  Float
+  confidenceScore                        Float
+  recommendation                         String
+  recommendationReasonPrimary            String
+  recommendationReasonSecondary          String
+  riskFlags                              Json
+  explanation                            Json
+
+  scenario HardwareScenario @relation(fields: [hardwareScenarioId], references: [id], onDelete: Cascade)
+
+  @@index([hardwareScenarioId])
+  @@index([source, gpuName, createdAt])
+}
+
+model ForecastBacktest {
+  id                       String   @id @default(cuid())
+  source                   String
+  gpuName                  String
+  numGpus                  Int?
+  offerType                String?
+  predictionBucketStartUtc DateTime
+  horizonHours             Int
+  predictedPTight          Float
+  realizedTight            Boolean
+  predictedPPriceUp        Float
+  realizedPriceUp          Boolean
+  predictedConsumptionProb Float
+  realizedConsumption      Boolean
+  realizedTightSustained   Boolean?
+  confidenceBucket         String?
+  inferabilityBucket       String?
+  stateAtPrediction        String?
+  calibrationBucket        String
+  modelVersion             String
+  createdAt                DateTime @default(now())
+
+  @@index([source, gpuName, predictionBucketStartUtc])
+  @@index([source, gpuName, numGpus, offerType, horizonHours])
 }

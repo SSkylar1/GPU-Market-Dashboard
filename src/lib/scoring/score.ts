@@ -1,27 +1,32 @@
-import type { ScoreInput, ScoreResult } from "@/types/market";
+import { clamp } from "@/lib/metrics/intelligence";
 
-function clamp(value: number, min = 0, max = 100): number {
-  return Math.max(min, Math.min(max, value));
-}
+export type LegacyScoreInput = {
+  demandScore: number;
+  priceStrengthScore: number;
+  competitionScore: number;
+  efficiencyScore: number;
+};
 
-export function calculateScenarioScore(input: ScoreInput): ScoreResult {
-  const demandScore = clamp(input.demandScore);
-  const priceStrengthScore = clamp(input.priceStrengthScore);
-  const competitionScore = clamp(input.competitionScore);
-  const efficiencyScore = clamp(input.efficiencyScore);
+export type LegacyScoreResult = {
+  overallScore: number;
+  recommendation: "Buy" | "Watch" | "Avoid";
+};
+
+export function calculateScenarioScore(input: LegacyScoreInput): LegacyScoreResult {
+  const demandScore = clamp(input.demandScore, 0, 100);
+  const priceStrengthScore = clamp(input.priceStrengthScore, 0, 100);
+  const competitionScore = clamp(input.competitionScore, 0, 100);
+  const efficiencyScore = clamp(input.efficiencyScore, 0, 100);
 
   const overallScore =
-    demandScore * 0.4 +
+    demandScore * 0.35 +
     priceStrengthScore * 0.2 +
     competitionScore * 0.2 +
-    efficiencyScore * 0.2;
+    efficiencyScore * 0.25;
 
-  let recommendation: ScoreResult["recommendation"] = "Avoid";
-  if (overallScore >= 75) {
-    recommendation = "Buy";
-  } else if (overallScore >= 55) {
-    recommendation = "Watch";
-  }
+  let recommendation: LegacyScoreResult["recommendation"] = "Avoid";
+  if (overallScore >= 72) recommendation = "Buy";
+  else if (overallScore >= 52) recommendation = "Watch";
 
   return {
     overallScore: Number(overallScore.toFixed(2)),

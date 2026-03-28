@@ -72,21 +72,12 @@ export async function GET(
           p10Price: true;
           medianPrice: true;
           p90Price: true;
-          newOfferCount: true;
-          disappearedOfferCount: true;
+          newOffers: true;
+          disappearedOffers: true;
           newOfferRate: true;
           disappearedRate: true;
-          netSupplyChange: true;
+          cohortPressureScore: true;
           medianPriceChange: true;
-          rentableShareChange: true;
-          marketPressureScore: true;
-          marketPressurePriceComponent: true;
-          marketPressureChurnComponent: true;
-          marketPressureSupplyComponent: true;
-          marketPressureAvailabilityComponent: true;
-          lowBandDisappearedCount: true;
-          midBandDisappearedCount: true;
-          highBandDisappearedCount: true;
           lowBandDisappearedRate: true;
           midBandDisappearedRate: true;
           highBandDisappearedRate: true;
@@ -106,21 +97,12 @@ export async function GET(
         p10Price: number | null;
         medianPrice: number | null;
         p90Price: number | null;
-        newOfferCount: number | null;
-        disappearedOfferCount: number | null;
+        newOffers: number | null;
+        disappearedOffers: number | null;
         newOfferRate: number | null;
         disappearedRate: number | null;
-        netSupplyChange: number | null;
+        cohortPressureScore: number | null;
         medianPriceChange: number | null;
-        rentableShareChange: number | null;
-        marketPressureScore: number | null;
-        marketPressurePriceComponent: number | null;
-        marketPressureChurnComponent: number | null;
-        marketPressureSupplyComponent: number | null;
-        marketPressureAvailabilityComponent: number | null;
-        lowBandDisappearedCount: number | null;
-        midBandDisappearedCount: number | null;
-        highBandDisappearedCount: number | null;
         lowBandDisappearedRate: number | null;
         midBandDisappearedRate: number | null;
         highBandDisappearedRate: number | null;
@@ -153,21 +135,12 @@ export async function GET(
           p10Price: true,
           medianPrice: true,
           p90Price: true,
-          newOfferCount: true,
-          disappearedOfferCount: true,
+          newOffers: true,
+          disappearedOffers: true,
           newOfferRate: true,
           disappearedRate: true,
-          netSupplyChange: true,
+          cohortPressureScore: true,
           medianPriceChange: true,
-          rentableShareChange: true,
-          marketPressureScore: true,
-          marketPressurePriceComponent: true,
-          marketPressureChurnComponent: true,
-          marketPressureSupplyComponent: true,
-          marketPressureAvailabilityComponent: true,
-          lowBandDisappearedCount: true,
-          midBandDisappearedCount: true,
-          highBandDisappearedCount: true,
           lowBandDisappearedRate: true,
           midBandDisappearedRate: true,
           highBandDisappearedRate: true,
@@ -258,7 +231,7 @@ export async function GET(
   const listingPrice = latestPoint?.medianPrice ?? 0;
   const expectedUtilizationEstimate = estimateExpectedUtilization({
     disappearedRate: latestPoint?.disappearedRate ?? 0,
-    netSupplyChange: latestPoint?.netSupplyChange ?? 0,
+    netSupplyChange: (latestPoint?.newOffers ?? 0) - (latestPoint?.disappearedOffers ?? 0),
     visibleSupplyCount: latestPoint?.totalOffers ?? latestOffers.length,
     rentableShare:
       latestPoint == null
@@ -283,10 +256,10 @@ export async function GET(
   const regime = classifyMarketRegime({
     disappearedRate: latestPoint?.disappearedRate ?? 0,
     newOfferRate: latestPoint?.newOfferRate ?? 0,
-    netSupplyChange: latestPoint?.netSupplyChange ?? 0,
+    netSupplyChange: (latestPoint?.newOffers ?? 0) - (latestPoint?.disappearedOffers ?? 0),
     medianPriceChange: latestPoint?.medianPriceChange ?? 0,
-    rentableShareChange: latestPoint?.rentableShareChange ?? 0,
-    marketPressureScore: latestPoint?.marketPressureScore ?? 0,
+    rentableShareChange: 0,
+    marketPressureScore: latestPoint?.cohortPressureScore ?? 0,
   });
 
   const recommendation = buildRecommendation({
@@ -295,7 +268,7 @@ export async function GET(
     midBandDisappearedRate: latestPoint?.midBandDisappearedRate ?? 0,
     highBandDisappearedRate: latestPoint?.highBandDisappearedRate ?? 0,
     topHostShare: competition.topHostShare,
-    marketPressureScore: latestPoint?.marketPressureScore ?? 0,
+    marketPressureScore: latestPoint?.cohortPressureScore ?? 0,
   });
 
   return Response.json({

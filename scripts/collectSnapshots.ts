@@ -4,6 +4,7 @@ import { PrismaClient, type Prisma } from "../src/generated/prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { Pool } from "pg";
 import { collectVastOffers } from "../src/lib/vast/collector";
+import { buildOfferIdentity, detectFingerprintCollisions } from "../src/lib/metrics/offerIdentity";
 
 type SnapshotOfferInput = {
   offerId: string;
@@ -23,6 +24,9 @@ type SnapshotOfferInput = {
   verified?: boolean | null;
   reliabilityScore?: number | null;
   pricePerHour: number | null;
+  dlperf?: number | null;
+  timeRemaining?: number | null;
+  geolocation?: Prisma.InputJsonValue;
   rawJson: Prisma.InputJsonValue;
 };
 
@@ -123,8 +127,22 @@ function getSourceQueryProfile(mode: string): Prisma.InputJsonValue {
 
   return {
     mode: "mock",
-    preset: "gpu-market-dashboard-seed-v1",
+    preset: "gpu-market-dashboard-seed-v2",
   } as Prisma.InputJsonValue;
+}
+
+function stableSignatureForCollisionCheck(offer: SnapshotOfferInput): string {
+  return [
+    offer.offerId,
+    offer.machineId ?? "mna",
+    offer.hostId ?? "hna",
+    offer.gpuName,
+    offer.numGpus,
+    offer.offerType ?? "unknown",
+    offer.gpuRamGb ?? "grna",
+    offer.cpuCores ?? "ccna",
+    offer.ramGb ?? "rgna",
+  ].join("::");
 }
 
 async function main() {
@@ -134,6 +152,59 @@ async function main() {
   const sourceQueryHash = createHash("sha256")
     .update(JSON.stringify(sourceQuery))
     .digest("hex");
+  const capturedAt = new Date();
+
+  const preparedOffers = offers.map((offer) => {
+    const identity = buildOfferIdentity({
+      source,
+      offerExternalId: offer.offerId,
+      machineId: offer.machineId,
+      hostId: offer.hostId,
+      gpuName: offer.gpuName,
+      numGpus: offer.numGpus,
+      offerType: offer.offerType,
+      gpuRamGb: offer.gpuRamGb,
+      cpuCores: offer.cpuCores,
+      ramGb: offer.ramGb,
+      reliabilityScore: offer.reliabilityScore,
+      verified: offer.verified,
+      pricePerHour: offer.pricePerHour,
+      inetDownMbps: offer.inetDownMbps,
+      inetUpMbps: offer.inetUpMbps,
+    });
+
+    return {
+      ...offer,
+      source,
+      capturedAt,
+      offerExternalId: identity.offerExternalId,
+      offerFingerprint: identity.fingerprint,
+      stableOfferFingerprint: identity.stableOfferFingerprint,
+      versionFingerprint: identity.versionFingerprint,
+      identityStrategy: identity.strategy,
+      identityQualityScore: identity.identityQualityScore,
+      offerType: offer.offerType?.trim().toLowerCase() || "unknown",
+      rawJson: {
+        ...(offer.rawJson as Record<string, unknown>),
+        ingestIdentityStrategy: identity.strategy,
+        ingestIdentityQualityScore: identity.identityQualityScore,
+      } as Prisma.InputJsonValue,
+    };
+  });
+
+  const collisions = detectFingerprintCollisions(
+    preparedOffers.map((offer) => ({
+      fingerprint: offer.offerFingerprint,
+      signature: stableSignatureForCollisionCheck(offer),
+    })),
+  );
+
+  if (collisions.size > 0) {
+    console.warn(`[collect] fingerprint collisions detected (${collisions.size}).`);
+    for (const [fingerprint, signatures] of collisions.entries()) {
+      console.warn(`[collect] collision ${fingerprint}: ${Array.from(signatures).join(" | ")}`);
+    }
+  }
 
   const snapshot = await prisma.marketSnapshot.create({
     data: {
@@ -141,10 +212,18 @@ async function main() {
       ingestMode: mode,
       sourceQueryHash,
       sourceQuery,
-      capturedAt: new Date(),
+      capturedAt,
       offers: {
-        create: offers.map((offer) => ({
+        create: preparedOffers.map((offer) => ({
+          source: offer.source,
+          capturedAt: offer.capturedAt,
           offerId: offer.offerId,
+          offerExternalId: offer.offerExternalId,
+          offerFingerprint: offer.offerFingerprint,
+          stableOfferFingerprint: offer.stableOfferFingerprint,
+          versionFingerprint: offer.versionFingerprint,
+          identityStrategy: offer.identityStrategy,
+          identityQualityScore: offer.identityQualityScore,
           hostId: offer.hostId,
           machineId: offer.machineId,
           gpuName: offer.gpuName,
@@ -161,6 +240,9 @@ async function main() {
           verified: offer.verified,
           reliabilityScore: offer.reliabilityScore,
           pricePerHour: offer.pricePerHour,
+          dlperf: offer.dlperf,
+          timeRemaining: offer.timeRemaining,
+          geolocation: offer.geolocation,
           rawJson: offer.rawJson,
         })),
       },
@@ -171,7 +253,7 @@ async function main() {
   });
 
   console.log(
-    `Created ${source} snapshot ${snapshot.id} with ${snapshot.offers.length} offers.`,
+    `Created ${source} snapshot ${snapshot.id} with ${snapshot.offers.length} offers at ${capturedAt.toISOString()}.`,
   );
 }
 

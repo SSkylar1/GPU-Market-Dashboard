@@ -24,21 +24,12 @@ type TrendRow = {
   p10Price: number | null;
   medianPrice: number | null;
   p90Price: number | null;
-  newOfferCount: number | null;
-  disappearedOfferCount: number | null;
+  newOffers: number | null;
+  disappearedOffers: number | null;
   newOfferRate: number | null;
   disappearedRate: number | null;
-  netSupplyChange: number | null;
+  cohortPressureScore: number | null;
   medianPriceChange: number | null;
-  rentableShareChange: number | null;
-  marketPressureScore: number | null;
-  marketPressurePriceComponent: number | null;
-  marketPressureChurnComponent: number | null;
-  marketPressureSupplyComponent: number | null;
-  marketPressureAvailabilityComponent: number | null;
-  lowBandDisappearedCount: number | null;
-  midBandDisappearedCount: number | null;
-  highBandDisappearedCount: number | null;
   lowBandDisappearedRate: number | null;
   midBandDisappearedRate: number | null;
   highBandDisappearedRate: number | null;
@@ -67,21 +58,12 @@ export async function GET() {
           p10Price: true;
           medianPrice: true;
           p90Price: true;
-          newOfferCount: true;
-          disappearedOfferCount: true;
+          newOffers: true;
+          disappearedOffers: true;
           newOfferRate: true;
           disappearedRate: true;
-          netSupplyChange: true;
+          cohortPressureScore: true;
           medianPriceChange: true;
-          rentableShareChange: true;
-          marketPressureScore: true;
-          marketPressurePriceComponent: true;
-          marketPressureChurnComponent: true;
-          marketPressureSupplyComponent: true;
-          marketPressureAvailabilityComponent: true;
-          lowBandDisappearedCount: true;
-          midBandDisappearedCount: true;
-          highBandDisappearedCount: true;
           lowBandDisappearedRate: true;
           midBandDisappearedRate: true;
           highBandDisappearedRate: true;
@@ -163,21 +145,12 @@ export async function GET() {
             p10Price: true,
             medianPrice: true,
             p90Price: true,
-            newOfferCount: true,
-            disappearedOfferCount: true,
+            newOffers: true,
+            disappearedOffers: true,
             newOfferRate: true,
             disappearedRate: true,
-            netSupplyChange: true,
+            cohortPressureScore: true,
             medianPriceChange: true,
-            rentableShareChange: true,
-            marketPressureScore: true,
-            marketPressurePriceComponent: true,
-            marketPressureChurnComponent: true,
-            marketPressureSupplyComponent: true,
-            marketPressureAvailabilityComponent: true,
-            lowBandDisappearedCount: true,
-            midBandDisappearedCount: true,
-            highBandDisappearedCount: true,
             lowBandDisappearedRate: true,
             midBandDisappearedRate: true,
             highBandDisappearedRate: true,
@@ -228,7 +201,7 @@ export async function GET() {
     const listingPrice = rollup.medianPrice ?? latestPoint?.medianPrice ?? 0;
     const expectedUtilizationEstimate = estimateExpectedUtilization({
       disappearedRate: latestPoint?.disappearedRate ?? 0,
-      netSupplyChange: latestPoint?.netSupplyChange ?? 0,
+      netSupplyChange: (latestPoint?.newOffers ?? 0) - (latestPoint?.disappearedOffers ?? 0),
       visibleSupplyCount: rollup.totalOffers,
       rentableShare: rollup.totalOffers === 0 ? 0 : rollup.rentableOffers / rollup.totalOffers,
       listingPricePerHour: listingPrice,
@@ -246,10 +219,10 @@ export async function GET() {
     const regime = classifyMarketRegime({
       disappearedRate: latestPoint?.disappearedRate ?? 0,
       newOfferRate: latestPoint?.newOfferRate ?? 0,
-      netSupplyChange: latestPoint?.netSupplyChange ?? 0,
+      netSupplyChange: (latestPoint?.newOffers ?? 0) - (latestPoint?.disappearedOffers ?? 0),
       medianPriceChange: latestPoint?.medianPriceChange ?? 0,
-      rentableShareChange: latestPoint?.rentableShareChange ?? 0,
-      marketPressureScore: latestPoint?.marketPressureScore ?? 0,
+      rentableShareChange: 0,
+      marketPressureScore: latestPoint?.cohortPressureScore ?? 0,
     });
 
     const recommendation = buildRecommendation({
@@ -258,7 +231,7 @@ export async function GET() {
       midBandDisappearedRate: latestPoint?.midBandDisappearedRate ?? 0,
       highBandDisappearedRate: latestPoint?.highBandDisappearedRate ?? 0,
       topHostShare: competition.topHostShare,
-      marketPressureScore: latestPoint?.marketPressureScore ?? 0,
+      marketPressureScore: latestPoint?.cohortPressureScore ?? 0,
     });
 
     return {
@@ -268,30 +241,22 @@ export async function GET() {
       unavailableShareProxy: rollup.impliedUtilization,
       leaseSignalShare: rollup.totalOffers === 0 ? 0 : rollup.rentedOffers / rollup.totalOffers,
       leaseSignalQuality: hasSecondaryLeaseSignal ? "high" : "low",
-      latestMarketPressure: latestPoint?.marketPressureScore ?? null,
-      marketPressureComponents:
-        latestPoint == null
-          ? null
-          : {
-              churn: latestPoint.marketPressureChurnComponent,
-              supply: latestPoint.marketPressureSupplyComponent,
-              price: latestPoint.marketPressurePriceComponent,
-              availability: latestPoint.marketPressureAvailabilityComponent,
-            },
+      latestMarketPressure: latestPoint?.cohortPressureScore ?? null,
+      marketPressureComponents: null,
       churn: {
-        latestNewOffers: latestPoint?.newOfferCount ?? 0,
-        latestDisappearedOffers: latestPoint?.disappearedOfferCount ?? 0,
+        latestNewOffers: latestPoint?.newOffers ?? 0,
+        latestDisappearedOffers: latestPoint?.disappearedOffers ?? 0,
         newOfferRate: latestPoint?.newOfferRate ?? 0,
         disappearedRate: latestPoint?.disappearedRate ?? 0,
-        netSupplyChange: latestPoint?.netSupplyChange ?? 0,
+        netSupplyChange: (latestPoint?.newOffers ?? 0) - (latestPoint?.disappearedOffers ?? 0),
       },
       priceBands: {
         lowBandDisappearedRate: latestPoint?.lowBandDisappearedRate ?? 0,
         midBandDisappearedRate: latestPoint?.midBandDisappearedRate ?? 0,
         highBandDisappearedRate: latestPoint?.highBandDisappearedRate ?? 0,
-        lowBandDisappearedCount: latestPoint?.lowBandDisappearedCount ?? 0,
-        midBandDisappearedCount: latestPoint?.midBandDisappearedCount ?? 0,
-        highBandDisappearedCount: latestPoint?.highBandDisappearedCount ?? 0,
+        lowBandDisappearedCount: 0,
+        midBandDisappearedCount: 0,
+        highBandDisappearedCount: 0,
       },
       competition,
       trends: {
