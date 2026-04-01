@@ -1,14 +1,19 @@
 import "dotenv/config";
+import { mkdir, writeFile } from "node:fs/promises";
 import { PrismaClient, type Offer } from "../src/generated/prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { Pool } from "pg";
 import { floorToUtcHalfHour } from "../src/lib/metrics/aggregation";
 import { classifyDisappearanceOutcome, summarizeReappearanceGaps } from "../src/lib/metrics/transitions";
 import {
+  buildEmpiricalCalibrator,
+  clamp,
+  combineDepthScores,
   classifyCohortState,
   computeCohortPressureScore,
   computeNoiseScore,
   computeStateConfidence,
+  estimateConsumptionProbability,
   forecastProbabilitiesFromState,
   mean,
   percentile,
@@ -18,11 +23,21 @@ import {
   type TrendPoint,
 } from "../src/lib/metrics/intelligence";
 import { buildOfferIdentity, type OfferIdentityResult } from "../src/lib/metrics/offerIdentity";
+import {
+  buildConsumptionEventLabel,
+  CONSUMPTION_HORIZONS,
+  type ConsumptionEventLabel,
+  type ConsumptionHorizon,
+} from "../src/lib/metrics/consumptionLabels";
 
 const PERSISTENCE_BUCKETS = Number(process.env.PERSISTENCE_BUCKETS ?? 3);
 const SHORT_GAP_MAX_BUCKETS = Number(process.env.SHORT_GAP_MAX_BUCKETS ?? 2);
-const MODEL_VERSION = "predictive-v3";
-const CALIBRATION_VERSION = "cal-v1";
+const MODEL_VERSION = "predictive-v3.2";
+const CALIBRATION_VERSION = "consumption-cal-v2";
+const CALIBRATION_BUCKET_STEP = 0.1;
+const CALIBRATION_DIR = "docs/artifacts";
+const CALIBRATION_FILE = `${CALIBRATION_DIR}/consumption-calibration-v2.json`;
+const VALIDATION_FILE = `${CALIBRATION_DIR}/validation-scorecard-v32.json`;
 
 type CohortKey = {
   source: string;
@@ -84,12 +99,28 @@ type CohortBucket = {
   pressurePersistence: number;
   state: CohortState;
   stateConfidence: number;
+  timeDepthScore: number;
+  crossSectionDepthScore: number;
   dataDepthScore: number;
   noiseScore: number;
   churnScore: number;
   signalStrengthScore: number;
   inferabilityScore: number;
   identityQualityScore: number;
+  observationCount: number;
+  observationsPerOffer: number;
+  medianPollGapMinutes: number;
+  maxPollGapMinutes: number;
+  coverageRatio: number;
+  offerSeenSpanMinutes: number;
+  cohortObservationDensityScore: number;
+  labelabilityScore: number;
+  futureWindowCoverage12h: number;
+  futureWindowCoverage24h: number;
+  futureWindowCoverage72h: number;
+  samplingQualityScore: number;
+  lifecycleObservabilityScore: number;
+  insufficientSampling: boolean;
   configVsFamilyPressureDelta: number | null;
   configVsFamilyPriceDelta: number | null;
   configVsFamilyHazardDelta: number | null;
@@ -101,6 +132,15 @@ type CohortBucket = {
   hostPersistenceRate: number;
   newMachineEntryRate: number;
   disappearingMachineRate: number;
+  consumptionEventLabels: Array<ConsumptionEventLabel & { stableOfferFingerprint: string }>;
+  consumptionLabelSummaryByHorizon: Record<ConsumptionHorizon, ConsumptionLabelSummary>;
+};
+
+type ConsumptionLabelSummary = {
+  usableCount: number;
+  censoredCount: number;
+  consumedCount: number;
+  realizedRate: number | null;
 };
 
 type LifecycleWorking = {
@@ -119,10 +159,19 @@ type LifecycleWorking = {
   firstSeenAt: Date;
   lastSeenAt: Date;
   totalVisibleSnapshots: number;
+  seenCount: number;
   totalVisibleHours: number;
+  cumulativeVisibleMinutes: number;
+  offerSeenSpanMinutes: number;
   disappearanceCount: number;
   reappearanceCount: number;
+  firstMissingAt: Date | null;
+  reappearedAt: Date | null;
+  gapDurationMinutes: number | null;
+  visibilitySegmentCount: number;
   longestContinuousVisibleHours: number;
+  estimatedConsumedAt: Date | null;
+  insufficientObservation: boolean;
   latestKnownPricePerHour: number | null;
   latestKnownReliabilityScore: number | null;
   firstKnownPricePerHour: number | null;
@@ -171,6 +220,70 @@ function bucketizeScore(score: number): "low" | "medium" | "high" {
   return "low";
 }
 
+function toMinutes(hours: number): number {
+  return hours * 60;
+}
+
+function summarizePollGapsMinutes(snapshots: Array<{ capturedAt: Date }>): {
+  medianPollGapMinutes: number;
+  maxPollGapMinutes: number;
+} {
+  if (snapshots.length < 2) {
+    return { medianPollGapMinutes: 30, maxPollGapMinutes: 30 };
+  }
+  const gaps: number[] = [];
+  for (let i = 1; i < snapshots.length; i += 1) {
+    const deltaMinutes = (snapshots[i].capturedAt.getTime() - snapshots[i - 1].capturedAt.getTime()) / 60000;
+    if (deltaMinutes > 0 && Number.isFinite(deltaMinutes)) gaps.push(deltaMinutes);
+  }
+  const medianPollGapMinutes = percentile(gaps, 0.5) ?? 30;
+  const maxPollGapMinutes = gaps.length === 0 ? medianPollGapMinutes : Math.max(...gaps);
+  return { medianPollGapMinutes, maxPollGapMinutes };
+}
+
+function computeSamplingQualityScore(input: {
+  observationCount: number;
+  observationsPerOffer: number;
+  medianPollGapMinutes: number;
+  maxPollGapMinutes: number;
+  coverageRatio: number;
+  futureWindowCoverage24h: number;
+}): number {
+  const observationDepth = clamp(input.observationCount / 80);
+  const offerDepth = clamp(input.observationsPerOffer / 8);
+  const medianGap = 1 - clamp((input.medianPollGapMinutes - 2) / 18);
+  const maxGap = 1 - clamp((input.maxPollGapMinutes - 5) / 55);
+  return (
+    100 *
+    clamp(
+      0.24 * observationDepth +
+        0.2 * offerDepth +
+        0.2 * medianGap +
+        0.12 * maxGap +
+        0.14 * clamp(input.coverageRatio) +
+        0.1 * clamp(input.futureWindowCoverage24h),
+    )
+  );
+}
+
+function computeLifecycleObservabilityScore(input: {
+  labelabilityScore: number;
+  offerSeenSpanMinutes: number;
+  futureWindowCoverage72h: number;
+  historyContinuity: number;
+}): number {
+  const spanScore = clamp(input.offerSeenSpanMinutes / (72 * 60));
+  return (
+    100 *
+    clamp(
+      0.34 * clamp(input.labelabilityScore / 100) +
+        0.26 * spanScore +
+        0.2 * clamp(input.futureWindowCoverage72h) +
+        0.2 * clamp(input.historyContinuity / 100),
+    )
+  );
+}
+
 const connectionString = process.env.DATABASE_URL;
 if (!connectionString) {
   throw new Error("DATABASE_URL is not set");
@@ -215,11 +328,15 @@ function inferOfferIdentity(offer: Offer, source: string): OfferIdentityResolved
     gpuRamGb: offer.gpuRamGb,
     cpuCores: offer.cpuCores,
     ramGb: offer.ramGb,
+    diskGb: offer.diskGb,
     reliabilityScore: offer.reliabilityScore,
     verified: offer.verified,
     pricePerHour: offer.pricePerHour,
     inetDownMbps: offer.inetDownMbps,
     inetUpMbps: offer.inetUpMbps,
+    geolocation: offer.geolocation,
+    sourceFingerprint:
+      offer.hostId == null || offer.machineId == null ? null : `${offer.hostId}:${offer.machineId}`,
   });
 
   return {
@@ -228,6 +345,63 @@ function inferOfferIdentity(offer: Offer, source: string): OfferIdentityResolved
     strategy: inferred.strategy,
     identityQualityScore: inferred.identityQualityScore,
     offerExternalId: inferred.offerExternalId,
+  };
+}
+
+function estimateSourceBucketHours(snapshots: Array<{ capturedAt: Date }>): number {
+  if (snapshots.length < 2) return 0.5;
+  const deltas: number[] = [];
+  for (let i = 1; i < snapshots.length; i += 1) {
+    const deltaHours = (snapshots[i].capturedAt.getTime() - snapshots[i - 1].capturedAt.getTime()) / 3600000;
+    if (deltaHours > 0 && Number.isFinite(deltaHours)) deltas.push(deltaHours);
+  }
+  const medianDelta = percentile(deltas, 0.5);
+  return medianDelta == null || medianDelta <= 0 ? 0.5 : medianDelta;
+}
+
+function findNextAppearanceIndex(indices: number[], afterIndex: number): number | null {
+  let left = 0;
+  let right = indices.length - 1;
+  let candidate: number | null = null;
+  while (left <= right) {
+    const mid = Math.floor((left + right) / 2);
+    const value = indices[mid];
+    if (value > afterIndex) {
+      candidate = value;
+      right = mid - 1;
+    } else {
+      left = mid + 1;
+    }
+  }
+  return candidate;
+}
+
+function summarizeConsumptionLabels(
+  labels: ConsumptionEventLabel[],
+): Record<ConsumptionHorizon, ConsumptionLabelSummary> {
+  const summarize = (horizon: ConsumptionHorizon): ConsumptionLabelSummary => {
+    const consumedValues = labels
+      .map((label) =>
+        horizon === 12 ? label.consumedWithin12h : horizon === 24 ? label.consumedWithin24h : label.consumedWithin72h,
+      )
+      .filter((value): value is boolean => value != null);
+    const censoredCount = labels.filter((label) =>
+      horizon === 12 ? label.censoredWithin12h : horizon === 24 ? label.censoredWithin24h : label.censoredWithin72h,
+    ).length;
+    const usableCount = consumedValues.length;
+    const consumedCount = consumedValues.filter(Boolean).length;
+    return {
+      usableCount,
+      censoredCount,
+      consumedCount,
+      realizedRate: usableCount > 0 ? safeDiv(consumedCount, usableCount) : null,
+    };
+  };
+
+  return {
+    12: summarize(12),
+    24: summarize(24),
+    72: summarize(72),
   };
 }
 
@@ -321,6 +495,8 @@ function toTrendPoint(bucket: CohortBucket): TrendPoint {
     pressurePersistence: bucket.pressurePersistence,
     state: bucket.state,
     stateConfidence: bucket.stateConfidence,
+    timeDepthScore: bucket.timeDepthScore,
+    crossSectionDepthScore: bucket.crossSectionDepthScore,
     dataDepthScore: bucket.dataDepthScore,
     noiseScore: bucket.noiseScore,
     churnScore: bucket.churnScore,
@@ -412,6 +588,8 @@ async function main() {
   const lifecycleMap = new Map<string, LifecycleWorking>();
   const bucketsByKey = new Map<string, CohortBucket>();
   const historyByCohort = new Map<string, TrendPoint[]>();
+  const sourceBucketHoursBySource = new Map<string, number>();
+  const sourceFinalSnapshotBySource = new Map<string, Date>();
 
   const snapshotsBySource = new Map<string, typeof snapshots>();
   for (const snapshot of snapshots) {
@@ -424,6 +602,28 @@ async function main() {
     const sortedSnapshots = [...sourceSnapshots].sort(
       (a, b) => a.capturedAt.getTime() - b.capturedAt.getTime(),
     );
+    const sourceBucketHours = estimateSourceBucketHours(sortedSnapshots);
+    const finalSnapshotAt = sortedSnapshots[sortedSnapshots.length - 1]?.capturedAt ?? new Date(0);
+    sourceBucketHoursBySource.set(source, sourceBucketHours);
+    sourceFinalSnapshotBySource.set(source, finalSnapshotAt);
+    const pollGapSummary = summarizePollGapsMinutes(sortedSnapshots);
+    const identityByOfferId = new Map<string, OfferIdentityResolved>();
+    const getIdentity = (offer: Offer) => {
+      const existing = identityByOfferId.get(offer.id);
+      if (existing) return existing;
+      const identity = inferOfferIdentity(offer, source);
+      identityByOfferId.set(offer.id, identity);
+      return identity;
+    };
+    const appearanceIndicesByFingerprint = new Map<string, number[]>();
+    for (let i = 0; i < sortedSnapshots.length; i += 1) {
+      for (const offer of sortedSnapshots[i].offers) {
+        const stableFp = getIdentity(offer).stableOfferFingerprint;
+        const current = appearanceIndicesByFingerprint.get(stableFp) ?? [];
+        current.push(i);
+        appearanceIndicesByFingerprint.set(stableFp, current);
+      }
+    }
 
     const previouslySeenFingerprints = new Set<string>();
 
@@ -465,7 +665,7 @@ async function main() {
         for (const futureOffer of futureSnapshot.offers) {
           const exact = `${futureOffer.gpuName}::${futureOffer.numGpus}::${normalizeOfferType(futureOffer.offerType)}`;
           const family = `${futureOffer.gpuName}::combined::combined`;
-          const stableFp = inferOfferIdentity(futureOffer, source).stableOfferFingerprint;
+          const stableFp = getIdentity(futureOffer).stableOfferFingerprint;
 
           const exactBuckets = futureIdentityByCohort.get(exact) ?? [];
           if (!exactBuckets[lookahead - 1]) exactBuckets[lookahead - 1] = new Set<string>();
@@ -480,7 +680,7 @@ async function main() {
       }
 
       for (const offer of currentOffers) {
-        const identity = inferOfferIdentity(offer, source);
+        const identity = getIdentity(offer);
         const fp = identity.stableOfferFingerprint;
         const lifecycleKey = `${source}::${fp}`;
 
@@ -502,10 +702,19 @@ async function main() {
             firstSeenAt: snapshot.capturedAt,
             lastSeenAt: snapshot.capturedAt,
             totalVisibleSnapshots: 1,
+            seenCount: 1,
             totalVisibleHours: 0,
+            cumulativeVisibleMinutes: 0,
+            offerSeenSpanMinutes: 0,
             disappearanceCount: 0,
             reappearanceCount: 0,
+            firstMissingAt: null,
+            reappearedAt: null,
+            gapDurationMinutes: null,
+            visibilitySegmentCount: 0,
             longestContinuousVisibleHours: 0,
+            estimatedConsumedAt: null,
+            insufficientObservation: false,
             latestKnownPricePerHour: offer.pricePerHour,
             latestKnownReliabilityScore: offer.reliabilityScore,
             firstKnownPricePerHour: offer.pricePerHour,
@@ -532,6 +741,11 @@ async function main() {
             existing.reappearanceCount += 1;
             existing.reappearanceGapBuckets.push(gap - 1);
             existing.lastStatus = "reappeared";
+            existing.firstMissingAt =
+              existing.firstMissingAt ??
+              new Date(existing.lastSeenAt.getTime() + sourceBucketHours * 3600000);
+            existing.reappearedAt = snapshot.capturedAt;
+            existing.gapDurationMinutes = toMinutes(Math.max(0, hoursSinceLastSeen));
             existing.segments.push({
               segmentStartAt: existing.currentSegmentStart,
               segmentEndAt: existing.lastSeenAt,
@@ -543,6 +757,7 @@ async function main() {
               startRentable: existing.currentSegmentStartRentable,
               endRentable: null,
             });
+            existing.visibilitySegmentCount = existing.segments.length;
             existing.currentSegmentStart = snapshot.capturedAt;
             existing.currentSegmentPrices = [];
             existing.currentSegmentStartPrice = offer.pricePerHour;
@@ -550,8 +765,14 @@ async function main() {
           }
 
           existing.totalVisibleSnapshots += 1;
+          existing.seenCount += 1;
           existing.totalVisibleHours += Math.max(0, Math.min(hoursSinceLastSeen, 1.5));
+          existing.cumulativeVisibleMinutes = toMinutes(existing.totalVisibleHours);
           existing.lastSeenAt = snapshot.capturedAt;
+          existing.offerSeenSpanMinutes = Math.max(
+            0,
+            (existing.lastSeenAt.getTime() - existing.firstSeenAt.getTime()) / 60000,
+          );
           existing.lastSeenSnapshotIndex = i;
           const priorVersionFingerprint = existing.latestVersionFingerprint;
           existing.latestVersionFingerprint = identity.versionFingerprint;
@@ -611,10 +832,10 @@ async function main() {
         const currentMap = new Map<string, Offer>();
 
         for (const offer of prev) {
-          prevMap.set(inferOfferIdentity(offer, source).stableOfferFingerprint, offer);
+          prevMap.set(getIdentity(offer).stableOfferFingerprint, offer);
         }
         for (const offer of current) {
-          currentMap.set(inferOfferIdentity(offer, source).stableOfferFingerprint, offer);
+          currentMap.set(getIdentity(offer).stableOfferFingerprint, offer);
         }
 
         const prevSet = new Set(prevMap.keys());
@@ -628,6 +849,7 @@ async function main() {
         let temporaryMissingOffers = 0;
         let rightCensoredDisappearedOffers = 0;
         const reappearanceDelays: number[] = [];
+        const consumptionEventLabels: Array<ConsumptionEventLabel & { stableOfferFingerprint: string }> = [];
 
         for (const id of currentSet) {
           if (prevSet.has(id)) continuingOffers += 1;
@@ -641,6 +863,24 @@ async function main() {
         for (const id of prevSet) {
           if (!currentSet.has(id)) {
             disappearedOffers += 1;
+            const nextAppearanceIndex = findNextAppearanceIndex(
+              appearanceIndicesByFingerprint.get(id) ?? [],
+              i,
+            );
+            const timeToReappearanceBuckets =
+              nextAppearanceIndex == null ? null : Math.max(1, nextAppearanceIndex - i);
+            const futureHoursAvailable =
+              (finalSnapshotAt.getTime() - snapshot.capturedAt.getTime()) / 3600000;
+            const label = buildConsumptionEventLabel({
+              timeToReappearanceBuckets,
+              sourceBucketHours,
+              futureHoursAvailable,
+            });
+            consumptionEventLabels.push({
+              stableOfferFingerprint: id,
+              ...label,
+            });
+
             const disappearanceOutcome = classifyDisappearanceOutcome({
               id,
               futureBuckets,
@@ -665,6 +905,14 @@ async function main() {
           }
         }
         const reappearanceSummary = summarizeReappearanceGaps(reappearanceDelays, SHORT_GAP_MAX_BUCKETS);
+        const consumptionLabelSummaryByHorizon = summarizeConsumptionLabels(consumptionEventLabels);
+        const labelabilityScore =
+          100 *
+          clamp(
+            0.5 * clamp(safeDiv(consumptionLabelSummaryByHorizon[24].usableCount, Math.max(disappearedOffers, 1))) +
+              0.2 * (1 - clamp(safeDiv(consumptionLabelSummaryByHorizon[24].censoredCount, Math.max(disappearedOffers, 1)))) +
+              0.3 * clamp(safeDiv(futureBuckets.length * sourceBucketHours, 24)),
+          );
         const evaluableDisappearedOffers = Math.max(
           0,
           disappearedOffers - rightCensoredDisappearedOffers,
@@ -674,6 +922,9 @@ async function main() {
 
         const stats = priceStats(current);
         const prevStats = priceStats(prev);
+        const futureWindowCoverage12h = clamp(safeDiv(futureBuckets.length * sourceBucketHours, 12));
+        const futureWindowCoverage24h = clamp(safeDiv(futureBuckets.length * sourceBucketHours, 24));
+        const futureWindowCoverage72h = clamp(safeDiv(futureBuckets.length * sourceBucketHours, 72));
 
         const rentableOffers = current.filter((offer) => offer.rentable).length;
         const rentedOffers = current.filter((offer) => offer.rented).length;
@@ -705,7 +956,7 @@ async function main() {
         const machineShare = countTopShares(machineIds);
         const hostShare = countTopShares(hostIds);
         const identityQualityScore =
-          (mean(current.map((offer) => inferOfferIdentity(offer, source).identityQualityScore)) || 0) * 100;
+          (mean(current.map((offer) => getIdentity(offer).identityQualityScore)) || 0) * 100;
 
         const p10 = prevStats.p10Price;
         const p90 = prevStats.p90Price;
@@ -735,6 +986,22 @@ async function main() {
         const priorPressureSeries = historyByCohort.get(
           makeCohortKey({ source, gpuName, numGpus, offerType }),
         ) ?? [];
+        const observationCount = priorPressureSeries.length + 1;
+        const offerSeenSpanMinutes = Math.max(0, observationCount - 1) * toMinutes(sourceBucketHours);
+        const expectedObservations = Math.max(
+          1,
+          Math.floor(offerSeenSpanMinutes / Math.max(1, pollGapSummary.medianPollGapMinutes)) + 1,
+        );
+        const coverageRatio = clamp(safeDiv(observationCount, expectedObservations));
+        const observationsPerOffer = safeDiv(observationCount, Math.max(current.length, 1));
+        const samplingQualityScore = computeSamplingQualityScore({
+          observationCount,
+          observationsPerOffer,
+          medianPollGapMinutes: pollGapSummary.medianPollGapMinutes,
+          maxPollGapMinutes: pollGapSummary.maxPollGapMinutes,
+          coverageRatio,
+          futureWindowCoverage24h,
+        });
         const priorPressure = priorPressureSeries.length > 0 ? priorPressureSeries[priorPressureSeries.length - 1].cohortPressureScore ?? 50 : 50;
         const priorPressure2 = priorPressureSeries.length > 1 ? priorPressureSeries[priorPressureSeries.length - 2].cohortPressureScore ?? priorPressure : priorPressure;
 
@@ -760,14 +1027,34 @@ async function main() {
           priorPressure2,
         });
 
-        const dataDepthScore =
+        const timeDepthScore = 100 * Math.min(1, safeDiv(priorPressureSeries.length + 1, 48));
+        const crossSectionDepthScore =
           100 *
           Math.min(
             1,
-            0.55 * safeDiv(current.length, 50) +
-              0.25 * safeDiv(currMachineSet.size, 20) +
-              0.2 * safeDiv(priorPressureSeries.length, 48),
+            0.55 * safeDiv(currMachineSet.size, 20) +
+              0.3 * safeDiv(currHostSet.size, 16) +
+              0.15 * safeDiv(current.length, 50),
           );
+        // v3.2: require both temporal continuity and cross-sectional competition depth.
+        const dataDepthScore = combineDepthScores(timeDepthScore, crossSectionDepthScore);
+        const lifecycleObservabilityScore = computeLifecycleObservabilityScore({
+          labelabilityScore,
+          offerSeenSpanMinutes,
+          futureWindowCoverage72h,
+          historyContinuity: timeDepthScore,
+        });
+        const cohortObservationDensityScore =
+          100 *
+          clamp(
+            0.4 * clamp(samplingQualityScore / 100) +
+              0.3 * clamp(coverageRatio) +
+              0.3 * clamp(lifecycleObservabilityScore / 100),
+          );
+        const insufficientSampling =
+          samplingQualityScore < 45 ||
+          observationCount < 8 ||
+          pollGapSummary.maxPollGapMinutes > 20;
 
         const candidatePoint: TrendPoint = {
           bucketStartUtc: floorToUtcHalfHour(snapshot.capturedAt),
@@ -797,6 +1084,8 @@ async function main() {
           signalStrengthScore: pressure.signalStrengthScore,
           inferabilityScore: pressure.inferabilityScore,
           identityQualityScore,
+          timeDepthScore,
+          crossSectionDepthScore,
         };
         const noiseScore = computeNoiseScore([...priorPressureSeries.slice(-20), candidatePoint]);
         const churnPenaltyScore =
@@ -917,12 +1206,28 @@ async function main() {
           pressurePersistence: pressure.pressurePersistence,
           state,
           stateConfidence,
+          timeDepthScore,
+          crossSectionDepthScore,
           dataDepthScore,
           noiseScore,
           churnScore: pressure.churnScore,
           signalStrengthScore: adjustedSignalStrengthScore,
           inferabilityScore: adjustedInferabilityScore,
           identityQualityScore,
+          observationCount,
+          observationsPerOffer,
+          medianPollGapMinutes: pollGapSummary.medianPollGapMinutes,
+          maxPollGapMinutes: pollGapSummary.maxPollGapMinutes,
+          coverageRatio,
+          offerSeenSpanMinutes,
+          cohortObservationDensityScore,
+          labelabilityScore,
+          futureWindowCoverage12h,
+          futureWindowCoverage24h,
+          futureWindowCoverage72h,
+          samplingQualityScore,
+          lifecycleObservabilityScore,
+          insufficientSampling,
           configVsFamilyPressureDelta: null,
           configVsFamilyPriceDelta: null,
           configVsFamilyHazardDelta: null,
@@ -934,6 +1239,8 @@ async function main() {
           hostPersistenceRate: safeDiv(hostContinuing, Math.max(prevHostSet.size, 1)),
           newMachineEntryRate: safeDiv(machineEntries, Math.max(currMachineSet.size, 1)),
           disappearingMachineRate: safeDiv(machineExits, Math.max(prevMachineSet.size, 1)),
+          consumptionEventLabels,
+          consumptionLabelSummaryByHorizon,
         };
 
         const key = `${makeCohortKey(bucket.key)}::${bucket.bucketStartUtc.toISOString()}`;
@@ -959,6 +1266,25 @@ async function main() {
         startRentable: lifecycle.currentSegmentStartRentable,
         endRentable: null,
       });
+      lifecycle.visibilitySegmentCount = lifecycle.segments.length;
+      lifecycle.offerSeenSpanMinutes = Math.max(
+        0,
+        (lifecycle.lastSeenAt.getTime() - lifecycle.firstSeenAt.getTime()) / 60000,
+      );
+      const bucketHours = sourceBucketHoursBySource.get(lifecycle.source) ?? 0.5;
+      const sourceFinalSnapshotAt = sourceFinalSnapshotBySource.get(lifecycle.source) ?? lifecycle.lastSeenAt;
+      const staleMinutes = Math.max(
+        0,
+        (sourceFinalSnapshotAt.getTime() - lifecycle.lastSeenAt.getTime()) / 60000,
+      );
+      if (staleMinutes >= Math.max(30, toMinutes(bucketHours) * 2)) {
+        lifecycle.estimatedConsumedAt = new Date(
+          lifecycle.lastSeenAt.getTime() + Math.round(bucketHours * 3600000),
+        );
+      }
+      lifecycle.insufficientObservation =
+        lifecycle.totalVisibleSnapshots < 3 ||
+        lifecycle.offerSeenSpanMinutes < Math.max(45, toMinutes(bucketHours) * 2);
     }
   }
 
@@ -1053,12 +1379,28 @@ async function main() {
         pressurePersistence: bucket.pressurePersistence,
         state: bucket.state,
         stateConfidence: bucket.stateConfidence,
+        timeDepthScore: bucket.timeDepthScore,
+        crossSectionDepthScore: bucket.crossSectionDepthScore,
         dataDepthScore: bucket.dataDepthScore,
         noiseScore: bucket.noiseScore,
         churnScore: bucket.churnScore,
         signalStrengthScore: bucket.signalStrengthScore,
         inferabilityScore: bucket.inferabilityScore,
         identityQualityScore: bucket.identityQualityScore,
+        observationCount: bucket.observationCount,
+        observationsPerOffer: bucket.observationsPerOffer,
+        medianPollGapMinutes: bucket.medianPollGapMinutes,
+        maxPollGapMinutes: bucket.maxPollGapMinutes,
+        coverageRatio: bucket.coverageRatio,
+        offerSeenSpanMinutes: bucket.offerSeenSpanMinutes,
+        cohortObservationDensityScore: bucket.cohortObservationDensityScore,
+        labelabilityScore: bucket.labelabilityScore,
+        futureWindowCoverage12h: bucket.futureWindowCoverage12h,
+        futureWindowCoverage24h: bucket.futureWindowCoverage24h,
+        futureWindowCoverage72h: bucket.futureWindowCoverage72h,
+        samplingQualityScore: bucket.samplingQualityScore,
+        lifecycleObservabilityScore: bucket.lifecycleObservabilityScore,
+        insufficientSampling: bucket.insufficientSampling,
         configVsFamilyPressureDelta: bucket.configVsFamilyPressureDelta,
         configVsFamilyPriceDelta: bucket.configVsFamilyPriceDelta,
         configVsFamilyHazardDelta: bucket.configVsFamilyHazardDelta,
@@ -1095,10 +1437,19 @@ async function main() {
         firstSeenAt: lifecycle.firstSeenAt,
         lastSeenAt: lifecycle.lastSeenAt,
         totalVisibleSnapshots: lifecycle.totalVisibleSnapshots,
+        seenCount: lifecycle.seenCount,
         totalVisibleHours: lifecycle.totalVisibleHours,
+        cumulativeVisibleMinutes: lifecycle.cumulativeVisibleMinutes,
+        offerSeenSpanMinutes: lifecycle.offerSeenSpanMinutes,
         disappearanceCount: lifecycle.disappearanceCount,
         reappearanceCount: lifecycle.reappearanceCount,
+        firstMissingAt: lifecycle.firstMissingAt,
+        reappearedAt: lifecycle.reappearedAt,
+        gapDurationMinutes: lifecycle.gapDurationMinutes,
+        visibilitySegmentCount: lifecycle.visibilitySegmentCount,
         longestContinuousVisibleHours: lifecycle.longestContinuousVisibleHours,
+        estimatedConsumedAt: lifecycle.estimatedConsumedAt,
+        insufficientObservation: lifecycle.insufficientObservation,
         latestKnownPricePerHour: lifecycle.latestKnownPricePerHour,
         latestKnownReliabilityScore: lifecycle.latestKnownReliabilityScore,
         firstKnownPricePerHour: lifecycle.firstKnownPricePerHour,
@@ -1130,7 +1481,10 @@ async function main() {
 
   await prisma.cohortForecast.deleteMany({});
 
-  const forecastsByKey = new Map<string, Array<{ horizonHours: number; pTight: number; pPriceUp: number }>>();
+  const coreForecastByKey = new Map<
+    string,
+    { pTight24h: number; pTight72h: number; pTight7d: number; pPriceUp24h: number }
+  >();
 
   for (const bucket of bucketRows) {
     const forecast = forecastProbabilitiesFromState({
@@ -1178,12 +1532,14 @@ async function main() {
           modelVersion: MODEL_VERSION,
         },
       });
-
-      const fKey = `${makeCohortKey(bucket.key)}::${bucket.bucketStartUtc.toISOString()}`;
-      const current = forecastsByKey.get(fKey) ?? [];
-      current.push({ horizonHours: horizon, pTight, pPriceUp });
-      forecastsByKey.set(fKey, current);
     }
+
+    coreForecastByKey.set(`${makeCohortKey(bucket.key)}::${bucket.bucketStartUtc.toISOString()}`, {
+      pTight24h: forecast.pTight24h,
+      pTight72h: forecast.pTight72h,
+      pTight7d: forecast.pTight7d,
+      pPriceUp24h: forecast.pPriceUp24h,
+    });
   }
 
   await prisma.forecastBacktest.deleteMany({});
@@ -1196,19 +1552,76 @@ async function main() {
     rowsByCohort.set(key, current);
   }
 
+  type PendingBacktestRow = {
+    source: string;
+    gpuName: string;
+    numGpus: number | null;
+    offerType: string | null;
+    predictionBucketStartUtc: Date;
+    horizonHours: number;
+    predictedPTight: number;
+    realizedTight: boolean;
+    predictedPPriceUp: number;
+    realizedPriceUp: boolean;
+    predictedConsumptionProbRaw: number;
+    predictedConsumptionProbCalibrated: number;
+    predictedConsumptionProb: number;
+    realizedConsumption: boolean;
+    realizedConsumptionLegacy: boolean;
+    consumptionLabelCensored: boolean;
+    consumptionLabelQuality: "usable" | "censored" | "under-observed" | "ambiguous-reappearance";
+    timeToReappearanceBuckets: number | null;
+    timeToReappearanceHours: number | null;
+    realizedConsumedWithin12h: boolean | null;
+    realizedConsumedWithin24h: boolean | null;
+    realizedConsumedWithin72h: boolean | null;
+    realizedTightSustained: boolean;
+    confidenceBucket: "low" | "medium" | "high";
+    inferabilityBucket: "low" | "medium" | "high";
+    stateAtPrediction: CohortState;
+    calibrationBucket: string;
+    modelVersion: string;
+  };
+
+  const pendingRows: PendingBacktestRow[] = [];
+  const consumptionUsableCountsByHorizon = new Map<number, number>();
+  const consumptionCensoredCountsByHorizon = new Map<number, number>();
+  const consumptionCoverageByCohort = new Map<string, { usable12: number; censored12: number; usable24: number; censored24: number; usable72: number; censored72: number }>();
+
   for (const [cohortKey, rows] of rowsByCohort.entries()) {
     const ordered = [...rows].sort((a, b) => a.bucketStartUtc.getTime() - b.bucketStartUtc.getTime());
     for (let i = 0; i < ordered.length; i += 1) {
       const row = ordered[i];
       const forecastKey = `${cohortKey}::${row.bucketStartUtc.toISOString()}`;
-      const forecasts = forecastsByKey.get(forecastKey) ?? [];
-      for (const forecast of forecasts) {
-        const targetTs = row.bucketStartUtc.getTime() + forecast.horizonHours * 3600 * 1000;
+      const coreForecast = coreForecastByKey.get(forecastKey);
+      if (!coreForecast) continue;
+
+      const regimeSuppressionFactor =
+        row.state === "non-inferable" ? 0.18 : row.state === "churn-dominated" ? 0.4 : 1;
+      const suppressedConsumption = (value: number) => clamp(0.48 + (value - 0.48) * regimeSuppressionFactor);
+
+      const cohortCoverage = consumptionCoverageByCohort.get(cohortKey) ?? {
+        usable12: 0,
+        censored12: 0,
+        usable24: 0,
+        censored24: 0,
+        usable72: 0,
+        censored72: 0,
+      };
+      cohortCoverage.usable12 += row.consumptionLabelSummaryByHorizon[12].usableCount;
+      cohortCoverage.censored12 += row.consumptionLabelSummaryByHorizon[12].censoredCount;
+      cohortCoverage.usable24 += row.consumptionLabelSummaryByHorizon[24].usableCount;
+      cohortCoverage.censored24 += row.consumptionLabelSummaryByHorizon[24].censoredCount;
+      cohortCoverage.usable72 += row.consumptionLabelSummaryByHorizon[72].usableCount;
+      cohortCoverage.censored72 += row.consumptionLabelSummaryByHorizon[72].censoredCount;
+      consumptionCoverageByCohort.set(cohortKey, cohortCoverage);
+
+      for (const horizonHours of CONSUMPTION_HORIZONS) {
+        const targetTs = row.bucketStartUtc.getTime() + horizonHours * 3600 * 1000;
         const futureIndex = ordered.findIndex((candidate) => candidate.bucketStartUtc.getTime() >= targetTs);
         const future = futureIndex >= 0 ? ordered[futureIndex] : null;
         if (!future) continue;
         const sustainedWindow = ordered.slice(futureIndex, futureIndex + 3);
-
         const realizedTight = future.state === "tight" || future.state === "tightening";
         const realizedTightSustained =
           sustainedWindow.filter(
@@ -1216,7 +1629,22 @@ async function main() {
           ).length >= 2;
         const realizedPriceUp =
           future.medianPrice != null && row.medianPrice != null && future.medianPrice > row.medianPrice;
-        const realizedConsumption =
+
+        const predictedPTight =
+          horizonHours === 12 ? coreForecast.pTight24h : horizonHours === 24 ? coreForecast.pTight24h : coreForecast.pTight72h;
+        const predictedPPriceUp = coreForecast.pPriceUp24h * (horizonHours === 72 ? 0.9 : 1);
+        const predictedConsumptionProbRaw = suppressedConsumption(
+          estimateConsumptionProbability({
+            cohortState: row.state,
+            relativePricePosition: 0,
+            reliabilityScore: null,
+            pressure: row.cohortPressureScore,
+            hours: horizonHours,
+            signalStrengthScore: row.signalStrengthScore,
+            inferabilityScore: row.inferabilityScore,
+          }),
+        );
+        const legacyRealizedConsumption =
           (future.totalOffers < row.totalOffers &&
             (future.persistentDisappearanceRateN ?? future.persistentDisappearanceRate) >=
               (row.persistentDisappearanceRateN ?? row.persistentDisappearanceRate)) ||
@@ -1224,33 +1652,184 @@ async function main() {
             (row.persistentDisappearanceRateN ?? row.persistentDisappearanceRate) >
             0.03;
 
-        const calibrationBucket = `${Math.floor(forecast.pTight * 10) / 10}-${Math.min(1, Math.floor(forecast.pTight * 10) / 10 + 0.1).toFixed(1)}`;
+        const calibrationBucket = `${Math.floor(predictedConsumptionProbRaw * 10) / 10}-${Math.min(1, Math.floor(predictedConsumptionProbRaw * 10) / 10 + 0.1).toFixed(1)}`;
+        for (const eventLabel of row.consumptionEventLabels) {
+          const consumed =
+            horizonHours === 12
+              ? eventLabel.consumedWithin12h
+              : horizonHours === 24
+                ? eventLabel.consumedWithin24h
+                : eventLabel.consumedWithin72h;
+          const censored =
+            horizonHours === 12
+              ? eventLabel.censoredWithin12h
+              : horizonHours === 24
+                ? eventLabel.censoredWithin24h
+                : eventLabel.censoredWithin72h;
 
-        await prisma.forecastBacktest.create({
-          data: {
+          if (censored) {
+            consumptionCensoredCountsByHorizon.set(
+              horizonHours,
+              (consumptionCensoredCountsByHorizon.get(horizonHours) ?? 0) + 1,
+            );
+          } else {
+            consumptionUsableCountsByHorizon.set(
+              horizonHours,
+              (consumptionUsableCountsByHorizon.get(horizonHours) ?? 0) + 1,
+            );
+          }
+          const cohortHorizonSummary = row.consumptionLabelSummaryByHorizon[horizonHours];
+          const consumptionLabelQuality: PendingBacktestRow["consumptionLabelQuality"] = censored
+            ? "censored"
+            : cohortHorizonSummary.usableCount < 5
+              ? "under-observed"
+              : eventLabel.timeToReappearanceBuckets != null &&
+                  eventLabel.timeToReappearanceBuckets <= SHORT_GAP_MAX_BUCKETS
+                ? "ambiguous-reappearance"
+                : "usable";
+
+          pendingRows.push({
             source: row.key.source,
             gpuName: row.key.gpuName,
             numGpus: row.key.numGpus,
             offerType: row.key.offerType,
             predictionBucketStartUtc: row.bucketStartUtc,
-            horizonHours: forecast.horizonHours,
-            predictedPTight: forecast.pTight,
+            horizonHours,
+            predictedPTight,
             realizedTight,
-            predictedPPriceUp: forecast.pPriceUp,
+            predictedPPriceUp,
             realizedPriceUp,
-            predictedConsumptionProb: row.persistentDisappearanceRateN,
-            realizedConsumption,
+            predictedConsumptionProbRaw,
+            predictedConsumptionProbCalibrated: predictedConsumptionProbRaw,
+            predictedConsumptionProb: predictedConsumptionProbRaw,
+            realizedConsumption: consumed ?? false,
+            realizedConsumptionLegacy: legacyRealizedConsumption,
+            consumptionLabelCensored: censored,
+            consumptionLabelQuality,
+            timeToReappearanceBuckets: eventLabel.timeToReappearanceBuckets,
+            timeToReappearanceHours: eventLabel.timeToReappearanceHours,
+            realizedConsumedWithin12h: eventLabel.consumedWithin12h,
+            realizedConsumedWithin24h: eventLabel.consumedWithin24h,
+            realizedConsumedWithin72h: eventLabel.consumedWithin72h,
             realizedTightSustained,
             confidenceBucket: bucketizeScore(row.stateConfidence),
             inferabilityBucket: bucketizeScore(row.inferabilityScore),
             stateAtPrediction: row.state,
             calibrationBucket,
             modelVersion: MODEL_VERSION,
-          },
-        });
+          });
+        }
       }
     }
   }
+
+  const calibrationMetadata: Record<string, ReturnType<typeof buildEmpiricalCalibrator>> = {};
+  for (const horizonHours of CONSUMPTION_HORIZONS) {
+    const calibrationRows = pendingRows.filter(
+      (row) => row.horizonHours === horizonHours && !row.consumptionLabelCensored,
+    );
+    const calibrator = buildEmpiricalCalibrator(
+      calibrationRows.map((row) => ({
+        predicted: row.predictedConsumptionProbRaw,
+        realized: row.realizedConsumption,
+      })),
+      { step: CALIBRATION_BUCKET_STEP, minCount: 24, priorWeight: 10 },
+    );
+    calibrationMetadata[String(horizonHours)] = calibrator;
+    for (const row of pendingRows) {
+      if (row.horizonHours !== horizonHours) continue;
+      const calibrated = calibrator.calibrate(row.predictedConsumptionProbRaw);
+      row.predictedConsumptionProbCalibrated = calibrated;
+      row.predictedConsumptionProb = calibrated;
+    }
+  }
+
+  if (pendingRows.length > 0) {
+    const chunkSize = 5000;
+    for (let offset = 0; offset < pendingRows.length; offset += chunkSize) {
+      const chunk = pendingRows.slice(offset, offset + chunkSize);
+      await prisma.forecastBacktest.createMany({
+        data: chunk.map((row) => ({
+          source: row.source,
+          gpuName: row.gpuName,
+          numGpus: row.numGpus,
+          offerType: row.offerType,
+          predictionBucketStartUtc: row.predictionBucketStartUtc,
+          horizonHours: row.horizonHours,
+          predictedPTight: row.predictedPTight,
+          realizedTight: row.realizedTight,
+          predictedPPriceUp: row.predictedPPriceUp,
+          realizedPriceUp: row.realizedPriceUp,
+          predictedConsumptionProb: row.predictedConsumptionProb,
+          predictedConsumptionProbRaw: row.predictedConsumptionProbRaw,
+          predictedConsumptionProbCalibrated: row.predictedConsumptionProbCalibrated,
+          realizedConsumption: row.realizedConsumption,
+          realizedConsumptionLegacy: row.realizedConsumptionLegacy,
+          consumptionLabelCensored: row.consumptionLabelCensored,
+          consumptionLabelQuality: row.consumptionLabelQuality,
+          timeToReappearanceBuckets: row.timeToReappearanceBuckets,
+          timeToReappearanceHours: row.timeToReappearanceHours,
+          realizedConsumedWithin12h: row.realizedConsumedWithin12h,
+          realizedConsumedWithin24h: row.realizedConsumedWithin24h,
+          realizedConsumedWithin72h: row.realizedConsumedWithin72h,
+          realizedTightSustained: row.realizedTightSustained,
+          confidenceBucket: row.confidenceBucket,
+          inferabilityBucket: row.inferabilityBucket,
+          stateAtPrediction: row.stateAtPrediction,
+          calibrationBucket: row.calibrationBucket,
+          modelVersion: row.modelVersion,
+        })),
+      });
+    }
+  }
+
+  await mkdir(CALIBRATION_DIR, { recursive: true });
+  await writeFile(
+    CALIBRATION_FILE,
+    JSON.stringify(
+      {
+        generatedAt: new Date().toISOString(),
+        modelVersion: MODEL_VERSION,
+        calibrationVersion: CALIBRATION_VERSION,
+        horizons: Object.fromEntries(
+          CONSUMPTION_HORIZONS.map((horizonHours) => {
+            const calibrator = calibrationMetadata[String(horizonHours)];
+            return [
+              String(horizonHours),
+              {
+                globalRate: calibrator.globalRate,
+                step: calibrator.step,
+                buckets: calibrator.buckets,
+              },
+            ];
+          }),
+        ),
+      },
+      null,
+      2,
+    ),
+  );
+
+  await writeFile(
+    VALIDATION_FILE,
+    JSON.stringify(
+      {
+        generatedAt: new Date().toISOString(),
+        modelVersion: MODEL_VERSION,
+        calibrationVersion: CALIBRATION_VERSION,
+        consumptionCounts: {
+          usableByHorizon: Object.fromEntries(CONSUMPTION_HORIZONS.map((h) => [h, consumptionUsableCountsByHorizon.get(h) ?? 0])),
+          censoredByHorizon: Object.fromEntries(CONSUMPTION_HORIZONS.map((h) => [h, consumptionCensoredCountsByHorizon.get(h) ?? 0])),
+        },
+        coverageByCohort: [...consumptionCoverageByCohort.entries()].map(([cohort, coverage]) => ({
+          cohort,
+          ...coverage,
+        })),
+      },
+      null,
+      2,
+    ),
+  );
 
   console.log(`Upserted ${bucketRows.length} lifecycle-aware trend aggregate rows.`);
   console.log(`Upserted ${lifecycleMap.size} offer lifecycle rows.`);

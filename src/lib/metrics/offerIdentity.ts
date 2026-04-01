@@ -11,11 +11,14 @@ export type OfferIdentityInput = {
   gpuRamGb?: number | null;
   cpuCores?: number | null;
   ramGb?: number | null;
+  diskGb?: number | null;
   reliabilityScore?: number | null;
   verified?: boolean | null;
   pricePerHour?: number | null;
   inetDownMbps?: number | null;
   inetUpMbps?: number | null;
+  geolocation?: unknown;
+  sourceFingerprint?: string | null;
 };
 
 export type OfferIdentityResult = {
@@ -40,6 +43,36 @@ function round(value: number | null | undefined, precision = 4): string {
 function hashSegments(segments: Array<string | number>): string {
   const joined = segments.join("|");
   return createHash("sha256").update(joined).digest("hex").slice(0, 32);
+}
+
+function normalizeRegion(geolocation: unknown): string {
+  if (!geolocation || typeof geolocation !== "object") return "geo:na";
+  const record = geolocation as Record<string, unknown>;
+  const country = typeof record.country === "string" ? record.country.toLowerCase() : "na";
+  const region =
+    typeof record.region === "string"
+      ? record.region.toLowerCase()
+      : typeof record.state === "string"
+        ? record.state.toLowerCase()
+        : "na";
+  return `geo:${country}:${region}`;
+}
+
+function bucketizePrice(value?: number | null): string {
+  if (value == null || !Number.isFinite(value)) return "p:na";
+  if (value < 0.5) return "p:low";
+  if (value < 2) return "p:mid";
+  return "p:high";
+}
+
+function networkTier(input: OfferIdentityInput): string {
+  const down = input.inetDownMbps ?? 0;
+  const up = input.inetUpMbps ?? 0;
+  const score = Math.min(down, up);
+  if (score >= 1000) return "net:t1";
+  if (score >= 300) return "net:t2";
+  if (score > 0) return "net:t3";
+  return "net:na";
 }
 
 export function buildOfferIdentity(input: OfferIdentityInput): OfferIdentityResult {
@@ -77,7 +110,11 @@ export function buildOfferIdentity(input: OfferIdentityInput): OfferIdentityResu
     String(input.gpuRamGb ?? "na"),
     String(input.cpuCores ?? "na"),
     String(input.ramGb ?? "na"),
+    String(input.diskGb ?? "na"),
     input.verified == null ? "na" : input.verified ? "v1" : "v0",
+    normalizeRegion(input.geolocation),
+    networkTier(input),
+    input.sourceFingerprint?.trim().toLowerCase() || "fp:na",
   ];
 
   if (input.machineId != null) {
@@ -93,7 +130,7 @@ export function buildOfferIdentity(input: OfferIdentityInput): OfferIdentityResu
       stableOfferFingerprint,
       versionFingerprint,
       strategy: "machine_signature",
-      identityQualityScore: 0.88,
+      identityQualityScore: 0.9,
     };
   }
 
@@ -110,19 +147,20 @@ export function buildOfferIdentity(input: OfferIdentityInput): OfferIdentityResu
       stableOfferFingerprint,
       versionFingerprint,
       strategy: "host_signature",
-      identityQualityScore: 0.72,
+      identityQualityScore: 0.76,
     };
   }
 
-  const stableOfferFingerprint = `weak:${hashSegments(stableCommon)}`;
-  const versionFingerprint = `weakv:${hashSegments([...stableCommon, ...mutableVersionSegments])}`;
+  const weakStableCommon = [...stableCommon, bucketizePrice(input.pricePerHour)];
+  const stableOfferFingerprint = `weak:${hashSegments(weakStableCommon)}`;
+  const versionFingerprint = `weakv:${hashSegments([...weakStableCommon, ...mutableVersionSegments])}`;
   return {
     offerExternalId: null,
     fingerprint: stableOfferFingerprint,
     stableOfferFingerprint,
     versionFingerprint,
     strategy: "weak_signature",
-    identityQualityScore: 0.45,
+    identityQualityScore: 0.5,
   };
 }
 

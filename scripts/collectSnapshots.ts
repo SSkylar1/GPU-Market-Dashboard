@@ -166,11 +166,15 @@ async function main() {
       gpuRamGb: offer.gpuRamGb,
       cpuCores: offer.cpuCores,
       ramGb: offer.ramGb,
+      diskGb: offer.diskGb,
       reliabilityScore: offer.reliabilityScore,
       verified: offer.verified,
       pricePerHour: offer.pricePerHour,
       inetDownMbps: offer.inetDownMbps,
       inetUpMbps: offer.inetUpMbps,
+      geolocation: offer.geolocation,
+      sourceFingerprint:
+        offer.hostId == null || offer.machineId == null ? null : `${offer.hostId}:${offer.machineId}`,
     });
 
     return {

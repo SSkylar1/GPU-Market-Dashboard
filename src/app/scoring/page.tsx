@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   Area,
-  AreaChart,
   CartesianGrid,
   Legend,
   Line,
@@ -34,6 +33,7 @@ type GpuOption = {
   latestUniqueMachines: number | null;
   latestInferabilityScore?: number | null;
   latestSignalStrengthScore?: number | null;
+  latestIdentityQualityScore?: number | null;
   defaults: {
     assumedPowerWatts: number;
     assumedHardwareCost: number;
@@ -41,6 +41,46 @@ type GpuOption = {
     electricityCostPerKwh: number;
     targetPaybackMonths: number;
     hoursWindow: number;
+  };
+};
+
+type CohortUniverseEntry = {
+  key: string;
+  gpuName: string;
+  cohortNumGpus: number | null;
+  cohortOfferType: string | null;
+  recommendation: "Avoid" | "Watch" | "Speculative" | "Buy if discounted" | "Buy";
+  state: string;
+  confidence: number;
+  inferability: number;
+  readinessScore: number;
+  readinessBand: "Too early" | "Emerging signal" | "Usable with caution" | "Decision-grade";
+  readinessTags: string[];
+  pressure: number;
+  signalStrengthScore: number;
+  samplingQualityScore: number;
+  identityQualityScore: number;
+  lifecycleObservabilityScore: number;
+  observationCount: number;
+  observationsPerOffer: number;
+  medianPollGapMinutes: number;
+  maxPollGapMinutes: number;
+  coverageRatio: number;
+  churnScore: number;
+  insufficientSampling: boolean;
+  exploratoryOpportunityScore: number;
+  exploratoryRank: number;
+  globalRank: number;
+  nearestUpgrade: "Avoid" | "Watch" | "Speculative" | "Buy if discounted" | "Buy" | null;
+  nearestDowngrade: "Avoid" | "Watch" | "Speculative" | "Buy if discounted" | "Buy" | null;
+  upgradeGuidance: string[];
+  downgradeRiskFactors: string[];
+  inferabilityDecomposition: {
+    marketAmbiguity: number;
+    poorSampling: number;
+    weakIdentity: number;
+    thinDepth: number;
+    churnReappearance: number;
   };
 };
 
@@ -62,6 +102,22 @@ type RecentScenario = {
 
 type ScoringMetaResponse = {
   gpuOptions: GpuOption[];
+  cohortUniverse: CohortUniverseEntry[];
+  recommendationDistribution: Record<string, number>;
+  regimeDistribution: Record<string, number>;
+  suppressionSummary: {
+    suppressedCount: number;
+    nearUsableCount: number;
+    underSampledCount: number;
+    identityConstrainedCount: number;
+    churnHeavyCount: number;
+    graduatingSoonCount: number;
+  };
+  pollingSummary: {
+    highPriorityTargetMinutes: string;
+    generalTargetMinutes: string;
+    longTailTargetMinutes: string;
+  };
   recentScenarios: RecentScenario[];
 };
 
@@ -77,6 +133,8 @@ type ForecastResponse = {
     pressure: number;
     movementScore: number;
     confidenceScore: number;
+    timeDepthScore: number;
+    crossSectionDepthScore: number;
     dataDepthScore: number;
     noiseScore: number;
     churnScore: number;
@@ -128,6 +186,12 @@ type ForecastResponse = {
     pOfferConsumedWithin12h: number;
     pOfferConsumedWithin24h: number;
     pOfferConsumedWithin72h: number;
+    pOfferConsumedWithin12hRaw: number;
+    pOfferConsumedWithin24hRaw: number;
+    pOfferConsumedWithin72hRaw: number;
+    pOfferConsumedWithin12hCalibrated: number;
+    pOfferConsumedWithin24hCalibrated: number;
+    pOfferConsumedWithin72hCalibrated: number;
   };
   utilization: {
     expected: number;
@@ -163,6 +227,68 @@ type ForecastResponse = {
     inferabilityScore: number;
     signalStrengthScore: number;
     identityQualityScore: number;
+  };
+  observationQuality: {
+    observationCount: number;
+    observationsPerOffer: number;
+    medianPollGapMinutes: number;
+    maxPollGapMinutes: number;
+    coverageRatio: number;
+    offerSeenSpanMinutes: number;
+    cohortObservationDensityScore: number;
+    labelabilityScore: number;
+    futureWindowCoverage12h: number;
+    futureWindowCoverage24h: number;
+    futureWindowCoverage72h: number;
+    samplingQualityScore: number;
+    lifecycleObservabilityScore: number;
+    insufficientSampling: boolean;
+    dataFreshnessQuality: "high" | "medium" | "low";
+  };
+  inferabilityDecomposition: {
+    marketAmbiguity: number;
+    poorSampling: number;
+    weakIdentity: number;
+    thinDepth: number;
+    churnReappearance: number;
+  };
+  readiness: {
+    readinessScore: number;
+    readinessBand: "Too early" | "Emerging signal" | "Usable with caution" | "Decision-grade";
+    readinessBreakdown: Record<string, number>;
+    graduationTags: string[];
+  };
+  suppressionReasons: string[];
+  samplingReasons: string[];
+  nearestUpgrade: "Avoid" | "Watch" | "Speculative" | "Buy if discounted" | "Buy" | null;
+  nearestDowngrade: "Avoid" | "Watch" | "Speculative" | "Buy if discounted" | "Buy" | null;
+  upgradeGuidance: string[];
+  downgradeRiskFactors: string[];
+  exploratoryOpportunityScore: number;
+  displayRecommendationReason: string;
+  unsuppressedProbabilities: {
+    tight: { p24hRaw: number; p72hRaw: number; p7dRaw: number; p24hConservative: number };
+    priceDirection24h: { upRaw: number; flatRaw: number; downRaw: number };
+    consumption: {
+      p12hRaw: number;
+      p24hRaw: number;
+      p72hRaw: number;
+      p12hCalibrated: number;
+      p24hCalibrated: number;
+      p72hCalibrated: number;
+    };
+  };
+  compareMetrics: {
+    pressure: number;
+    readiness: number;
+    inferability: number;
+    confidence: number;
+    samplingQuality: number;
+    identityQuality: number;
+    lifecycleObservability: number;
+    priceAdvantage: number;
+    churnPenalty: number;
+    pConsumed24h: number;
   };
   explanation: {
     observed: string[];
@@ -246,6 +372,7 @@ type ForecastResponse = {
       inferabilityBucket?: string | null;
       stateAtPrediction?: string | null;
     }>;
+    labelQualitySummary: Array<{ horizonHours: number; quality: string; count: number }>;
   };
 };
 
@@ -289,6 +416,16 @@ type ChartLegendKey = "supply" | "priceCurve" | "config" | "calibration";
 export default function ScoringPage() {
   const [form, setForm] = useState<FormState>(defaultForm);
   const [gpuOptions, setGpuOptions] = useState<GpuOption[]>([]);
+  const [cohortUniverse, setCohortUniverse] = useState<CohortUniverseEntry[]>([]);
+  const [mode, setMode] = useState<"conservative" | "exploratory">("conservative");
+  const [recommendationDistribution, setRecommendationDistribution] = useState<Record<string, number>>({});
+  const [regimeDistribution, setRegimeDistribution] = useState<Record<string, number>>({});
+  const [suppressionSummary, setSuppressionSummary] = useState<ScoringMetaResponse["suppressionSummary"] | null>(null);
+  const [pollingSummary, setPollingSummary] = useState<ScoringMetaResponse["pollingSummary"] | null>(null);
+  const [selectedCompareKeys, setSelectedCompareKeys] = useState<string[]>([]);
+  const [detailKey, setDetailKey] = useState<string | null>(null);
+  const [cohortFilter, setCohortFilter] = useState<"all" | "Avoid" | "Watch" | "Speculative" | "Buy if discounted" | "Buy">("all");
+  const [cohortSort, setCohortSort] = useState<"rank" | "readiness" | "opportunity" | "consumption" | "inferability">("rank");
   const [recentScenarios, setRecentScenarios] = useState<RecentScenario[]>([]);
   const [result, setResult] = useState<ForecastResponse | null>(null);
   const [loading, setLoading] = useState(false);
@@ -310,6 +447,11 @@ export default function ScoringPage() {
         const response = await fetch("/api/scoring", { cache: "no-store" });
         const data = (await response.json()) as ScoringMetaResponse;
         setGpuOptions(data.gpuOptions ?? []);
+        setCohortUniverse(data.cohortUniverse ?? []);
+        setRecommendationDistribution(data.recommendationDistribution ?? {});
+        setRegimeDistribution(data.regimeDistribution ?? {});
+        setSuppressionSummary(data.suppressionSummary ?? null);
+        setPollingSummary(data.pollingSummary ?? null);
         setRecentScenarios(data.recentScenarios ?? []);
 
         if ((data.gpuOptions ?? []).length > 0) {
@@ -367,6 +509,27 @@ export default function ScoringPage() {
     );
   }, [form.cohortSelection, form.gpuName, gpuOptions]);
 
+  const rankedCohorts = useMemo(() => {
+    const filtered = cohortUniverse.filter((row) => (cohortFilter === "all" ? true : row.recommendation === cohortFilter));
+    const sorted = [...filtered].sort((a, b) => {
+      if (cohortSort === "readiness") return b.readinessScore - a.readinessScore;
+      if (cohortSort === "opportunity") return b.exploratoryOpportunityScore - a.exploratoryOpportunityScore;
+      if (cohortSort === "consumption") return b.exploratoryOpportunityScore - a.exploratoryOpportunityScore;
+      if (cohortSort === "inferability") return b.inferability - a.inferability;
+      return mode === "exploratory" ? a.exploratoryRank - b.exploratoryRank : a.globalRank - b.globalRank;
+    });
+    return sorted;
+  }, [cohortUniverse, cohortFilter, cohortSort, mode]);
+
+  const compareRows = useMemo(
+    () => selectedCompareKeys.map((key) => cohortUniverse.find((row) => row.key === key)).filter((row): row is CohortUniverseEntry => row != null),
+    [cohortUniverse, selectedCompareKeys],
+  );
+  const selectedDetailRow = useMemo(
+    () => (detailKey ? cohortUniverse.find((row) => row.key === detailKey) ?? null : null),
+    [cohortUniverse, detailKey],
+  );
+
   const filteredPressureTimeline = useMemo(() => {
     if (!result) return [];
     const hours = range === "24h" ? 24 : range === "72h" ? 72 : 24 * 7;
@@ -378,6 +541,10 @@ export default function ScoringPage() {
     const hours = range === "24h" ? 24 : range === "72h" ? 72 : 24 * 7;
     return filterSeriesByRangeHours(result.visuals.supplyTimeline, hours);
   }, [result, range]);
+
+  const isSuppressedRegime =
+    result?.currentState.state === "non-inferable" || result?.currentState.state === "churn-dominated";
+  const hasSparseCalibration = (result?.visuals.calibration.length ?? 0) < 3;
 
   function onLegendClick(chart: ChartLegendKey, payload: unknown) {
     const maybePayload = payload as { dataKey?: unknown };
@@ -399,6 +566,14 @@ export default function ScoringPage() {
   function isLegendSeriesVisible(chart: ChartLegendKey, dataKey: string) {
     const selected = legendSelection[chart];
     return selected == null || selected.includes(dataKey);
+  }
+
+  function toggleCompare(key: string) {
+    setSelectedCompareKeys((current) => {
+      if (current.includes(key)) return current.filter((item) => item !== key);
+      if (current.length >= 5) return current;
+      return [...current, key];
+    });
   }
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -473,6 +648,233 @@ export default function ScoringPage() {
   return (
     <main className="mx-auto w-full max-w-7xl p-4 text-sm text-zinc-100 md:p-8">
       <h1 className="mb-4 text-2xl font-semibold">Predictive Probability Engine</h1>
+
+      <section className="mb-4 grid gap-3 rounded border border-zinc-700 bg-zinc-900 p-3 md:grid-cols-3">
+        <div className="rounded border border-zinc-700 bg-zinc-950 p-3">
+          <p className="text-xs text-zinc-400">Mode</p>
+          <div className="mt-2 flex gap-2">
+            <button
+              type="button"
+              onClick={() => setMode("conservative")}
+              className={`rounded border px-3 py-1 ${mode === "conservative" ? "border-blue-400 bg-blue-500/20" : "border-zinc-600"}`}
+            >
+              Conservative
+            </button>
+            <button
+              type="button"
+              onClick={() => setMode("exploratory")}
+              className={`rounded border px-3 py-1 ${mode === "exploratory" ? "border-emerald-400 bg-emerald-500/20" : "border-zinc-600"}`}
+            >
+              Exploratory
+            </button>
+          </div>
+          <p className="mt-2 text-xs text-zinc-400">
+            {mode === "conservative"
+              ? "Conservative preserves suppression/veto as source of truth."
+              : "Exploratory shows relative opportunity even when suppressed."}
+          </p>
+        </div>
+
+        <div className="rounded border border-zinc-700 bg-zinc-950 p-3">
+          <p className="text-xs text-zinc-400">Polling & Observability</p>
+          <p className="mt-1 text-sm">
+            Tiers: high {pollingSummary?.highPriorityTargetMinutes ?? "2-5"}m, general {pollingSummary?.generalTargetMinutes ?? "5-10"}m, long-tail {pollingSummary?.longTailTargetMinutes ?? "10-20"}m
+          </p>
+          <p className="text-xs text-zinc-400">Use exploratory mode for relative ranking while cohorts mature.</p>
+        </div>
+
+        <div className="rounded border border-zinc-700 bg-zinc-950 p-3">
+          <p className="text-xs text-zinc-400">Suppression Summary</p>
+          <p className="mt-1 text-sm">
+            Suppressed {suppressionSummary?.suppressedCount ?? 0} | Near usable {suppressionSummary?.nearUsableCount ?? 0} | Under-sampled {suppressionSummary?.underSampledCount ?? 0}
+          </p>
+          <p className="text-xs text-zinc-400">
+            Identity-constrained {suppressionSummary?.identityConstrainedCount ?? 0} | Churn-heavy {suppressionSummary?.churnHeavyCount ?? 0} | Graduating soon {suppressionSummary?.graduatingSoonCount ?? 0}
+          </p>
+        </div>
+      </section>
+
+      <section className="mb-4 grid gap-3 md:grid-cols-2">
+        <div className="rounded border border-zinc-700 bg-zinc-900 p-3">
+          <p className="mb-2 text-sm font-semibold">Recommendation Distribution</p>
+          <div className="grid grid-cols-5 gap-2 text-xs">
+            {(["Avoid", "Watch", "Speculative", "Buy if discounted", "Buy"] as const).map((label) => (
+              <div key={label} className="rounded border border-zinc-700 bg-zinc-950 p-2 text-center">
+                <p className="text-zinc-400">{label}</p>
+                <p className="text-lg font-semibold">{recommendationDistribution[label] ?? 0}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="rounded border border-zinc-700 bg-zinc-900 p-3">
+          <p className="mb-2 text-sm font-semibold">Regime Distribution</p>
+          <div className="grid grid-cols-4 gap-2 text-xs">
+            {["non-inferable", "thin-data", "churn-dominated", "balanced", "tightening", "tight", "oversupplied", "volatile"].map((label) => (
+              <div key={label} className="rounded border border-zinc-700 bg-zinc-950 p-2 text-center">
+                <p className="text-zinc-400">{label}</p>
+                <p className="text-lg font-semibold">{regimeDistribution[label] ?? 0}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="mb-4 rounded border border-zinc-700 bg-zinc-900 p-3">
+        <div className="mb-2 flex flex-wrap items-end gap-2">
+          <label className="flex flex-col gap-1 text-xs">
+            Recommendation Filter
+            <select
+              className="rounded border border-zinc-600 bg-zinc-950 px-2 py-1 text-sm"
+              value={cohortFilter}
+              onChange={(event) =>
+                setCohortFilter(
+                  event.target.value as "all" | "Avoid" | "Watch" | "Speculative" | "Buy if discounted" | "Buy",
+                )
+              }
+            >
+              <option value="all">All</option>
+              <option value="Avoid">Avoid</option>
+              <option value="Watch">Watch</option>
+              <option value="Speculative">Speculative</option>
+              <option value="Buy if discounted">Buy if discounted</option>
+              <option value="Buy">Buy</option>
+            </select>
+          </label>
+          <label className="flex flex-col gap-1 text-xs">
+            Sort
+            <select
+              className="rounded border border-zinc-600 bg-zinc-950 px-2 py-1 text-sm"
+              value={cohortSort}
+              onChange={(event) =>
+                setCohortSort(
+                  event.target.value as "rank" | "readiness" | "opportunity" | "consumption" | "inferability",
+                )
+              }
+            >
+              <option value="rank">Global Rank</option>
+              <option value="readiness">Readiness</option>
+              <option value="opportunity">Exploratory Opportunity</option>
+              <option value="consumption">Consumption Proxy</option>
+              <option value="inferability">Inferability</option>
+            </select>
+          </label>
+          <p className="text-xs text-zinc-400">Select up to 5 cohorts for side-by-side compare.</p>
+        </div>
+        <div className="max-h-80 overflow-auto">
+          <table className="min-w-full text-xs">
+            <thead className="text-zinc-400">
+              <tr>
+                <th className="px-2 py-1 text-left">Compare</th>
+                <th className="px-2 py-1 text-left">Rank</th>
+                <th className="px-2 py-1 text-left">GPU</th>
+                <th className="px-2 py-1 text-left">Config</th>
+                <th className="px-2 py-1 text-left">Recommendation</th>
+                <th className="px-2 py-1 text-left">Regime</th>
+                <th className="px-2 py-1 text-left">Readiness</th>
+                <th className="px-2 py-1 text-left">Inferability</th>
+                <th className="px-2 py-1 text-left">Confidence</th>
+                <th className="px-2 py-1 text-left">Sampling</th>
+                <th className="px-2 py-1 text-left">Identity</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rankedCohorts.slice(0, 120).map((row) => (
+                <tr key={row.key} className="cursor-pointer border-t border-zinc-800 hover:bg-zinc-800/40" onClick={() => setDetailKey(row.key)}>
+                  <td className="px-2 py-1">
+                    <input
+                      type="checkbox"
+                      checked={selectedCompareKeys.includes(row.key)}
+                      onChange={(event) => {
+                        event.stopPropagation();
+                        toggleCompare(row.key);
+                      }}
+                    />
+                  </td>
+                  <td className="px-2 py-1">{mode === "exploratory" ? row.exploratoryRank : row.globalRank}</td>
+                  <td className="px-2 py-1">{row.gpuName}</td>
+                  <td className="px-2 py-1">
+                    {row.cohortNumGpus ?? "combined"}x / {row.cohortOfferType ?? "combined"}
+                  </td>
+                  <td className="px-2 py-1">{row.recommendation}</td>
+                  <td className="px-2 py-1">{row.state}</td>
+                  <td className="px-2 py-1">{row.readinessScore.toFixed(1)} ({row.readinessBand})</td>
+                  <td className="px-2 py-1">{row.inferability.toFixed(1)}</td>
+                  <td className="px-2 py-1">{row.confidence.toFixed(1)}</td>
+                  <td className="px-2 py-1">{row.samplingQualityScore.toFixed(1)}</td>
+                  <td className="px-2 py-1">{row.identityQualityScore.toFixed(1)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      {compareRows.length > 0 ? (
+        <section className="mb-4 rounded border border-zinc-700 bg-zinc-900 p-3">
+          <p className="mb-2 text-sm font-semibold">Compare ({compareRows.length}/5)</p>
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-xs">
+              <thead className="text-zinc-400">
+                <tr>
+                  <th className="px-2 py-1 text-left">GPU</th>
+                  <th className="px-2 py-1 text-left">num GPUs</th>
+                  <th className="px-2 py-1 text-left">Offer type</th>
+                  <th className="px-2 py-1 text-left">Recommendation</th>
+                  <th className="px-2 py-1 text-left">Regime</th>
+                  <th className="px-2 py-1 text-left">Readiness</th>
+                  <th className="px-2 py-1 text-left">Inferability</th>
+                  <th className="px-2 py-1 text-left">Confidence</th>
+                  <th className="px-2 py-1 text-left">Sampling</th>
+                  <th className="px-2 py-1 text-left">Identity</th>
+                  <th className="px-2 py-1 text-left">Pressure</th>
+                  <th className="px-2 py-1 text-left">Churn penalty</th>
+                  <th className="px-2 py-1 text-left">Exploratory rank</th>
+                  <th className="px-2 py-1 text-left">Upgrade guidance</th>
+                </tr>
+              </thead>
+              <tbody>
+                {compareRows.map((row) => (
+                  <tr key={row.key} className="border-t border-zinc-800">
+                    <td className="px-2 py-1">{row.gpuName}</td>
+                    <td className="px-2 py-1">{row.cohortNumGpus ?? "combined"}</td>
+                    <td className="px-2 py-1">{row.cohortOfferType ?? "combined"}</td>
+                    <td className="px-2 py-1">{row.recommendation}</td>
+                    <td className="px-2 py-1">{row.state}</td>
+                    <td className="px-2 py-1">{row.readinessScore.toFixed(1)}</td>
+                    <td className="px-2 py-1">{row.inferability.toFixed(1)}</td>
+                    <td className="px-2 py-1">{row.confidence.toFixed(1)}</td>
+                    <td className="px-2 py-1">{row.samplingQualityScore.toFixed(1)}</td>
+                    <td className="px-2 py-1">{row.identityQualityScore.toFixed(1)}</td>
+                    <td className="px-2 py-1">{row.pressure.toFixed(1)}</td>
+                    <td className="px-2 py-1">{row.churnScore.toFixed(1)}</td>
+                    <td className="px-2 py-1">{row.exploratoryRank}</td>
+                    <td className="px-2 py-1">{row.upgradeGuidance.slice(0, 2).join(" ") || "-"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      ) : null}
+
+      {selectedDetailRow ? (
+        <section className="mb-4 rounded border border-zinc-200 bg-zinc-50 p-3 text-zinc-900">
+          <h2 className="text-base font-semibold">
+            Why this result? {selectedDetailRow.gpuName} {selectedDetailRow.cohortNumGpus ?? "combined"}x / {selectedDetailRow.cohortOfferType ?? "combined"}
+          </h2>
+          <p className="text-sm">
+            Recommendation: {selectedDetailRow.recommendation} | Regime: {selectedDetailRow.state} | Readiness {selectedDetailRow.readinessScore.toFixed(1)} ({selectedDetailRow.readinessBand})
+          </p>
+          <p className="text-sm">
+            Supporting: pressure {selectedDetailRow.pressure.toFixed(1)}, inferability {selectedDetailRow.inferability.toFixed(1)}, confidence {selectedDetailRow.confidence.toFixed(1)}
+          </p>
+          <p className="text-sm">
+            Limits: sampling {selectedDetailRow.samplingQualityScore.toFixed(1)}, identity {selectedDetailRow.identityQualityScore.toFixed(1)}, churn {selectedDetailRow.churnScore.toFixed(1)}
+          </p>
+          <p className="text-sm">What would change this? {selectedDetailRow.upgradeGuidance.slice(0, 3).join(" ") || "Maintain current metrics."}</p>
+          <p className="text-sm">Downgrade risks: {selectedDetailRow.downgradeRiskFactors.slice(0, 3).join(" ") || "No immediate downgrade trigger."}</p>
+        </section>
+      ) : null}
 
       <form onSubmit={onSubmit} className="mb-6 grid gap-3 rounded border border-zinc-700 bg-zinc-900 p-4 md:grid-cols-4">
         <label className="flex flex-col gap-1">
@@ -643,15 +1045,15 @@ export default function ScoringPage() {
 
       {result ? (
         <>
-          {result.currentState.state === "non-inferable" || result.currentState.state === "churn-dominated" ? (
+          {isSuppressedRegime ? (
             <section className="mb-4 rounded border border-amber-500 bg-amber-950/40 p-3 text-amber-100">
               <p className="font-semibold">
                 {result.currentState.state === "non-inferable"
-                  ? "Non-inferable market: forecasts are heavily suppressed."
-                  : "Churn-dominated market: movement may not indicate true consumption."}
+                  ? "Insufficient signal: this regime is non-inferable and outputs are intentionally suppressed."
+                  : "Churn-dominated regime: movement exists, but durable removal signal is weak."}
               </p>
               <p className="text-sm">
-                Inferability {result.currentState.inferabilityScore.toFixed(1)} | Signal strength {result.currentState.signalStrengthScore.toFixed(1)} | Identity quality {result.currentState.identityQualityScore.toFixed(1)}
+                Inferability {result.currentState.inferabilityScore.toFixed(1)} | Signal strength {result.currentState.signalStrengthScore.toFixed(1)} | Identity quality {result.currentState.identityQualityScore.toFixed(1)} | time depth {result.currentState.timeDepthScore.toFixed(1)} | cross-section depth {result.currentState.crossSectionDepthScore.toFixed(1)}
               </p>
             </section>
           ) : null}
@@ -680,10 +1082,10 @@ export default function ScoringPage() {
               </p>
             </div>
             <div className="rounded border border-zinc-200 bg-white p-3">
-              <p className="text-xs text-zinc-500">Trust / Payback</p>
+              <p className="text-xs text-zinc-500">Readiness / Payback</p>
               <p className="text-xl font-semibold">{pct(result.economics.pPaybackWithinTarget)}</p>
               <p className="text-xs text-zinc-500">
-                Confidence {result.confidence.level} | Inferability {result.currentState.inferabilityScore.toFixed(1)}
+                Readiness {result.readiness.readinessScore.toFixed(1)} ({result.readiness.readinessBand}) | Inferability {result.currentState.inferabilityScore.toFixed(1)}
               </p>
             </div>
           </section>
@@ -707,6 +1109,40 @@ export default function ScoringPage() {
               <p className="text-xs text-zinc-400">
                 conf {result.currentState.confidenceScore.toFixed(1)} | infer {result.currentState.inferabilityScore.toFixed(1)}
               </p>
+            </div>
+          </section>
+
+          <section className="mb-6 grid gap-3 md:grid-cols-3">
+            <div className="rounded border border-zinc-700 bg-zinc-900 p-3">
+              <h3 className="mb-1 text-sm font-semibold">Observation Quality</h3>
+              <p className="text-xs text-zinc-400">
+                Freshness quality {result.observationQuality.dataFreshnessQuality} | density {result.observationQuality.cohortObservationDensityScore.toFixed(1)}
+              </p>
+              <p className="text-xs text-zinc-400">
+                obs {result.observationQuality.observationCount} | per offer {result.observationQuality.observationsPerOffer.toFixed(2)}
+              </p>
+              <p className="text-xs text-zinc-400">
+                median gap {result.observationQuality.medianPollGapMinutes.toFixed(1)}m | max gap {result.observationQuality.maxPollGapMinutes.toFixed(1)}m
+              </p>
+              <p className="text-xs text-zinc-400">
+                sampling {result.observationQuality.samplingQualityScore.toFixed(1)} | lifecycle {result.observationQuality.lifecycleObservabilityScore.toFixed(1)}
+              </p>
+            </div>
+            <div className="rounded border border-zinc-700 bg-zinc-900 p-3">
+              <h3 className="mb-1 text-sm font-semibold">Why This Result?</h3>
+              <p className="text-xs text-zinc-400">{result.displayRecommendationReason}</p>
+              <p className="mt-1 text-xs text-zinc-400">
+                Decomposition: market {(result.inferabilityDecomposition.marketAmbiguity * 100).toFixed(0)}% | sampling {(result.inferabilityDecomposition.poorSampling * 100).toFixed(0)}% | identity {(result.inferabilityDecomposition.weakIdentity * 100).toFixed(0)}%
+              </p>
+              <p className="mt-1 text-xs text-zinc-400">{result.suppressionReasons.join(" ")}</p>
+              <p className="text-xs text-zinc-400">{result.samplingReasons.join(" ")}</p>
+            </div>
+            <div className="rounded border border-zinc-700 bg-zinc-900 p-3">
+              <h3 className="mb-1 text-sm font-semibold">What Would Change This?</h3>
+              <p className="text-xs text-zinc-400">Nearest upgrade: {result.nearestUpgrade ?? "-"}</p>
+              <p className="text-xs text-zinc-400">Nearest downgrade: {result.nearestDowngrade ?? "-"}</p>
+              <p className="mt-1 text-xs text-zinc-400">{result.upgradeGuidance.slice(0, 3).join(" ") || "No immediate upgrade blocker."}</p>
+              <p className="mt-1 text-xs text-zinc-400">{result.downgradeRiskFactors.slice(0, 3).join(" ") || "No immediate downgrade trigger."}</p>
             </div>
           </section>
 
@@ -781,6 +1217,11 @@ export default function ScoringPage() {
 
             <div className="rounded border border-zinc-700 bg-zinc-900 p-3">
               <h3 className="mb-2 text-sm font-semibold">Price Position vs Consumption</h3>
+              {isSuppressedRegime ? (
+                <p className="mb-2 text-xs text-amber-300">
+                  Curve flattened toward neutral due to insufficient inferable signal.
+                </p>
+              ) : null}
               <div className="h-64 w-full">
                 <ResponsiveContainer>
                   <LineChart data={result.visuals.pricePositionCurve}>
@@ -820,6 +1261,11 @@ export default function ScoringPage() {
 
             <div className="rounded border border-zinc-700 bg-zinc-900 p-3">
               <h3 className="mb-2 text-sm font-semibold">Market Map (Utilization vs Payback)</h3>
+              {isSuppressedRegime ? (
+                <p className="mb-2 text-xs text-amber-300">
+                  Map is intentionally conservative in suppressed regimes; treat as risk guardrails, not upside ranking.
+                </p>
+              ) : null}
               <div className="h-64 w-full">
                 <ResponsiveContainer>
                   <ScatterChart>
@@ -835,6 +1281,11 @@ export default function ScoringPage() {
 
             <div className="rounded border border-zinc-700 bg-zinc-900 p-3 md:col-span-2">
               <h3 className="mb-2 text-sm font-semibold">Calibration Chart (Predicted vs Realized)</h3>
+              {hasSparseCalibration ? (
+                <p className="mb-2 text-xs text-amber-300">
+                  Insufficient calibration samples for stable bucket interpretation.
+                </p>
+              ) : null}
               <div className="h-64 w-full">
                 <ResponsiveContainer>
                   <LineChart data={result.visuals.calibration}>
@@ -874,8 +1325,9 @@ export default function ScoringPage() {
               <p>Exact vs family pressure: {result.currentState.pressure.toFixed(1)} vs {result.familyBaseline.pressure.toFixed(1)}</p>
               <p>Machine depth score: {result.familyBaseline.machineDepth.toFixed(1)}</p>
               <p>Concentration top3: {pct(result.exactCohort.machineConcentrationShareTop3)}</p>
-              <p>Noise: {result.currentState.noiseScore.toFixed(1)} | Data depth: {result.currentState.dataDepthScore.toFixed(1)}</p>
+              <p>Noise: {result.currentState.noiseScore.toFixed(1)} | Data depth: {result.currentState.dataDepthScore.toFixed(1)} (time {result.currentState.timeDepthScore.toFixed(1)} / cross-section {result.currentState.crossSectionDepthScore.toFixed(1)})</p>
               <p>Movement: {result.currentState.movementScore.toFixed(1)} | Churn: {result.currentState.churnScore.toFixed(1)} | Signal: {result.currentState.signalStrengthScore.toFixed(1)} | Inferability: {result.currentState.inferabilityScore.toFixed(1)}</p>
+              <p>Consumption p(24h): raw {pct(result.forecastProbabilities.pOfferConsumedWithin24hRaw)} | calibrated {pct(result.forecastProbabilities.pOfferConsumedWithin24hCalibrated)} | suppressed output {pct(result.forecastProbabilities.pOfferConsumedWithin24h)}</p>
               <p>Revenue range: {dollars(result.economics.expectedDailyRevenueLow)} - {dollars(result.economics.expectedDailyRevenueHigh)}</p>
               <p>Margin range: {dollars(result.economics.expectedDailyMarginLow)} - {dollars(result.economics.expectedDailyMarginHigh)}</p>
             </div>
@@ -932,6 +1384,30 @@ export default function ScoringPage() {
                   </tbody>
                 </table>
               </div>
+            </div>
+          </section>
+
+          <section className="mb-6 rounded border border-zinc-700 bg-zinc-900 p-3">
+            <h3 className="mb-2 text-sm font-semibold">Realized Label Quality</h3>
+            <div className="overflow-x-auto">
+              <table className="min-w-full text-xs">
+                <thead>
+                  <tr className="text-zinc-400">
+                    <th className="px-2 py-1 text-left">Horizon</th>
+                    <th className="px-2 py-1 text-left">Quality</th>
+                    <th className="px-2 py-1 text-left">Count</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {result.drilldowns.labelQualitySummary.map((row) => (
+                    <tr key={`${row.horizonHours}-${row.quality}`} className="border-t border-zinc-800">
+                      <td className="px-2 py-1">{row.horizonHours}h</td>
+                      <td className="px-2 py-1">{row.quality}</td>
+                      <td className="px-2 py-1">{row.count}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </section>
         </>

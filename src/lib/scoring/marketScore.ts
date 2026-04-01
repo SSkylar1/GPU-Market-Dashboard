@@ -1,4 +1,5 @@
 import { subHours } from "date-fns";
+import { readFile } from "node:fs/promises";
 import { z } from "zod";
 import { prisma } from "@/lib/db/prisma";
 import {
@@ -6,6 +7,7 @@ import {
   buildRecommendation,
   classifyCohortState,
   clamp,
+  combineDepthScores,
   computeNoiseScore,
   computeStateConfidence,
   computeWindowTrendSummary,
@@ -20,6 +22,15 @@ import {
   type TrendPoint,
 } from "@/lib/metrics/intelligence";
 import { calculateScenarioScore } from "@/lib/scoring/score";
+import {
+  buildTransitionGuidance,
+  computeExploratoryOpportunityScore,
+  computeLifecycleObservabilityScore,
+  computeReadiness,
+  computeSamplingQualityScore,
+  decomposeInferability,
+  type InferabilityDecomposition,
+} from "@/lib/scoring/readiness";
 
 const requestSchema = z.object({
   gpuName: z.string().min(1),
@@ -36,14 +47,74 @@ const requestSchema = z.object({
 });
 
 const MODEL_VERSION = "predictive-v3";
-const CALIBRATION_VERSION = "cal-v1";
+const CALIBRATION_VERSION = "consumption-cal-v2";
 
 type TrendRow = TrendPoint & {
   source: string;
   gpuName: string;
   numGpus: number | null;
   offerType: string | null;
+  observationCount?: number | null;
+  observationsPerOffer?: number | null;
+  medianPollGapMinutes?: number | null;
+  maxPollGapMinutes?: number | null;
+  coverageRatio?: number | null;
+  offerSeenSpanMinutes?: number | null;
+  cohortObservationDensityScore?: number | null;
+  labelabilityScore?: number | null;
+  futureWindowCoverage12h?: number | null;
+  futureWindowCoverage24h?: number | null;
+  futureWindowCoverage72h?: number | null;
+  samplingQualityScore?: number | null;
+  lifecycleObservabilityScore?: number | null;
+  insufficientSampling?: boolean | null;
 };
+
+type ConsumptionCalibrationPayload = {
+  calibrationVersion: string;
+  horizons: Record<
+    string,
+    {
+      globalRate: number;
+      step: number;
+      buckets: Array<{
+        bucket: string;
+        count: number;
+        avgRawPredicted: number;
+        avgCalibratedPredicted: number;
+        realizedRate: number;
+      }>;
+    }
+  >;
+};
+
+let calibrationCache: ConsumptionCalibrationPayload | null = null;
+
+async function loadConsumptionCalibration(): Promise<ConsumptionCalibrationPayload | null> {
+  if (calibrationCache) return calibrationCache;
+  try {
+    const raw = await readFile("docs/artifacts/consumption-calibration-v2.json", "utf8");
+    calibrationCache = JSON.parse(raw) as ConsumptionCalibrationPayload;
+    return calibrationCache;
+  } catch {
+    return null;
+  }
+}
+
+function applyConsumptionCalibration(
+  payload: ConsumptionCalibrationPayload | null,
+  horizonHours: 12 | 24 | 72,
+  rawPredicted: number,
+): number {
+  if (!payload) return rawPredicted;
+  const calibration = payload.horizons[String(horizonHours)];
+  if (!calibration) return rawPredicted;
+  const lower = Math.floor(clamp(rawPredicted) / calibration.step) * calibration.step;
+  const upper = Math.min(1, lower + calibration.step);
+  const key = `${lower.toFixed(1)}-${upper.toFixed(1)}`;
+  const bucket = calibration.buckets.find((item) => item.bucket === key);
+  return bucket == null ? rawPredicted : clamp(bucket.avgCalibratedPredicted);
+}
 
 export type MarketScoringResult = {
   modelVersion: string;
@@ -61,6 +132,8 @@ export type MarketScoringResult = {
     pressure: number;
     movementScore: number;
     confidenceScore: number;
+    timeDepthScore: number;
+    crossSectionDepthScore: number;
     dataDepthScore: number;
     noiseScore: number;
     churnScore: number;
@@ -112,6 +185,12 @@ export type MarketScoringResult = {
     pOfferConsumedWithin12h: number;
     pOfferConsumedWithin24h: number;
     pOfferConsumedWithin72h: number;
+    pOfferConsumedWithin12hRaw: number;
+    pOfferConsumedWithin24hRaw: number;
+    pOfferConsumedWithin72hRaw: number;
+    pOfferConsumedWithin12hCalibrated: number;
+    pOfferConsumedWithin24hCalibrated: number;
+    pOfferConsumedWithin72hCalibrated: number;
   };
   utilization: {
     expected: number;
@@ -147,6 +226,62 @@ export type MarketScoringResult = {
     inferabilityScore: number;
     signalStrengthScore: number;
     identityQualityScore: number;
+  };
+  observationQuality: {
+    observationCount: number;
+    observationsPerOffer: number;
+    medianPollGapMinutes: number;
+    maxPollGapMinutes: number;
+    coverageRatio: number;
+    offerSeenSpanMinutes: number;
+    cohortObservationDensityScore: number;
+    labelabilityScore: number;
+    futureWindowCoverage12h: number;
+    futureWindowCoverage24h: number;
+    futureWindowCoverage72h: number;
+    samplingQualityScore: number;
+    lifecycleObservabilityScore: number;
+    insufficientSampling: boolean;
+    dataFreshnessQuality: "high" | "medium" | "low";
+  };
+  inferabilityDecomposition: InferabilityDecomposition;
+  readiness: {
+    readinessScore: number;
+    readinessBand: "Too early" | "Emerging signal" | "Usable with caution" | "Decision-grade";
+    readinessBreakdown: Record<string, number>;
+    graduationTags: string[];
+  };
+  suppressionReasons: string[];
+  samplingReasons: string[];
+  nearestUpgrade: "Avoid" | "Watch" | "Speculative" | "Buy if discounted" | "Buy" | null;
+  nearestDowngrade: "Avoid" | "Watch" | "Speculative" | "Buy if discounted" | "Buy" | null;
+  upgradeGuidance: string[];
+  downgradeRiskFactors: string[];
+  exploratoryOpportunityScore: number;
+  displayRecommendationReason: string;
+  unsuppressedProbabilities: {
+    tight: { p24hRaw: number; p72hRaw: number; p7dRaw: number; p24hConservative: number };
+    priceDirection24h: { upRaw: number; flatRaw: number; downRaw: number };
+    consumption: {
+      p12hRaw: number;
+      p24hRaw: number;
+      p72hRaw: number;
+      p12hCalibrated: number;
+      p24hCalibrated: number;
+      p72hCalibrated: number;
+    };
+  };
+  compareMetrics: {
+    pressure: number;
+    readiness: number;
+    inferability: number;
+    confidence: number;
+    samplingQuality: number;
+    identityQuality: number;
+    lifecycleObservability: number;
+    priceAdvantage: number;
+    churnPenalty: number;
+    pConsumed24h: number;
   };
   explanation: {
     observed: string[];
@@ -230,6 +365,7 @@ export type MarketScoringResult = {
       inferabilityBucket?: string | null;
       stateAtPrediction?: string | null;
     }>;
+    labelQualitySummary: Array<{ horizonHours: number; quality: string; count: number }>;
   };
   trends: {
     window6h: ReturnType<typeof computeWindowTrendSummary>;
@@ -317,9 +453,20 @@ export async function scoreScenarioWithMarket(input: unknown): Promise<MarketSco
   const latestFamily = familySeries[familySeries.length - 1];
 
   const inferredNoiseScore = latestExact.noiseScore ?? computeNoiseScore(exactSeries);
+  const inferredTimeDepthScore =
+    latestExact.timeDepthScore ?? clamp(safeDiv(exactSeries.length, 48), 0, 1) * 100;
+  const inferredCrossSectionDepthScore =
+    latestExact.crossSectionDepthScore ??
+    clamp(
+      0.55 * safeDiv(latestExact.uniqueMachines ?? 0, 20) +
+        0.3 * safeDiv(latestExact.uniqueHosts ?? 0, 16) +
+        0.15 * safeDiv(latestExact.totalOffers, 50),
+      0,
+      1,
+    ) * 100;
   const inferredDataDepthScore =
     latestExact.dataDepthScore ??
-    clamp((safeDiv(latestExact.totalOffers, 50) + safeDiv(latestExact.uniqueMachines ?? 0, 24)) / 2, 0, 1) * 100;
+    combineDepthScores(inferredTimeDepthScore, inferredCrossSectionDepthScore);
   const inferredIdentityQualityScore = latestExact.identityQualityScore ?? latestFamily.identityQualityScore ?? 55;
   const inferredMovementScore =
     latestExact.movementScore ??
@@ -391,6 +538,53 @@ export async function scoreScenarioWithMarket(input: unknown): Promise<MarketSco
       inferabilityScore: alignedInferabilityScore,
       identityQualityScore: inferredIdentityQualityScore,
     });
+
+  const observationCount = latestExact.observationCount ?? exactSeries.length;
+  const observationsPerOffer =
+    latestExact.observationsPerOffer ?? safeDiv(observationCount, Math.max(latestExact.totalOffers, 1));
+  const medianPollGapMinutes = latestExact.medianPollGapMinutes ?? 30;
+  const maxPollGapMinutes = latestExact.maxPollGapMinutes ?? medianPollGapMinutes;
+  const coverageRatio = latestExact.coverageRatio ?? clamp(safeDiv(observationCount, 48));
+  const offerSeenSpanMinutes =
+    latestExact.offerSeenSpanMinutes ?? Math.max(0, exactSeries.length - 1) * 30;
+  const futureWindowCoverage12h = latestExact.futureWindowCoverage12h ?? clamp(safeDiv(exactSeries.length, 24));
+  const futureWindowCoverage24h = latestExact.futureWindowCoverage24h ?? clamp(safeDiv(exactSeries.length, 48));
+  const futureWindowCoverage72h = latestExact.futureWindowCoverage72h ?? clamp(safeDiv(exactSeries.length, 144));
+  const labelabilityScore =
+    latestExact.labelabilityScore ??
+    clamp(
+      100 *
+        (0.5 * futureWindowCoverage24h +
+          0.3 * futureWindowCoverage72h +
+          0.2 * clamp(safeDiv(observationCount, 96))),
+    );
+  const samplingQualityScore =
+    latestExact.samplingQualityScore ??
+    computeSamplingQualityScore({
+      observationCount,
+      observationsPerOffer,
+      medianPollGapMinutes,
+      maxPollGapMinutes,
+      coverageRatio,
+      futureWindowCoverage24h,
+    });
+  const lifecycleObservabilityScore =
+    latestExact.lifecycleObservabilityScore ??
+    computeLifecycleObservabilityScore({
+      labelabilityScore,
+      offerSeenSpanMinutes,
+      futureWindowCoverage72h,
+      historyContinuity: inferredTimeDepthScore,
+    });
+  const cohortObservationDensityScore =
+    latestExact.cohortObservationDensityScore ??
+    100 *
+      clamp(
+        0.4 * clamp(samplingQualityScore / 100) +
+          0.3 * clamp(coverageRatio) +
+          0.3 * clamp(lifecycleObservabilityScore / 100),
+      );
+  const insufficientSampling = latestExact.insufficientSampling ?? samplingQualityScore < 45;
 
   const latestOffersSnapshot = await prisma.marketSnapshot.findFirst({
     where: { source: parsed.source },
@@ -521,8 +715,9 @@ export async function scoreScenarioWithMarket(input: unknown): Promise<MarketSco
         .filter((value): value is number => value != null && Number.isFinite(value)),
     ) || inferredIdentityQualityScore / 100;
   const identityQualityScore = clamp((latestIdentityQuality ?? 0.55), 0, 1) * 100;
+  const calibrationPayload = await loadConsumptionCalibration();
 
-  const pOfferConsumedWithin12h = estimateConsumptionProbability({
+  const pOfferConsumedWithin12hRaw = estimateConsumptionProbability({
     cohortState: state,
     relativePricePosition: relativePriceVsExactMedian,
     reliabilityScore: reliabilityMean,
@@ -532,7 +727,7 @@ export async function scoreScenarioWithMarket(input: unknown): Promise<MarketSco
     inferabilityScore: alignedInferabilityScore,
   });
 
-  const pOfferConsumedWithin24h = estimateConsumptionProbability({
+  const pOfferConsumedWithin24hRaw = estimateConsumptionProbability({
     cohortState: state,
     relativePricePosition: relativePriceVsExactMedian,
     reliabilityScore: reliabilityMean,
@@ -542,7 +737,7 @@ export async function scoreScenarioWithMarket(input: unknown): Promise<MarketSco
     inferabilityScore: alignedInferabilityScore,
   });
 
-  const pOfferConsumedWithin72h = estimateConsumptionProbability({
+  const pOfferConsumedWithin72hRaw = estimateConsumptionProbability({
     cohortState: state,
     relativePricePosition: relativePriceVsExactMedian,
     reliabilityScore: reliabilityMean,
@@ -551,10 +746,25 @@ export async function scoreScenarioWithMarket(input: unknown): Promise<MarketSco
     signalStrengthScore: alignedSignalStrengthScore,
     inferabilityScore: alignedInferabilityScore,
   });
+  const pOfferConsumedWithin12hCalibrated = applyConsumptionCalibration(
+    calibrationPayload,
+    12,
+    pOfferConsumedWithin12hRaw,
+  );
+  const pOfferConsumedWithin24hCalibrated = applyConsumptionCalibration(
+    calibrationPayload,
+    24,
+    pOfferConsumedWithin24hRaw,
+  );
+  const pOfferConsumedWithin72hCalibrated = applyConsumptionCalibration(
+    calibrationPayload,
+    72,
+    pOfferConsumedWithin72hRaw,
+  );
   const suppressedConsumption = (value: number) => clamp(0.48 + (value - 0.48) * regimeSuppressionFactor);
-  const pOfferConsumedWithin12hSuppressed = suppressedConsumption(pOfferConsumedWithin12h);
-  const pOfferConsumedWithin24hSuppressed = suppressedConsumption(pOfferConsumedWithin24h);
-  const pOfferConsumedWithin72hSuppressed = suppressedConsumption(pOfferConsumedWithin72h);
+  const pOfferConsumedWithin12hSuppressed = suppressedConsumption(pOfferConsumedWithin12hCalibrated);
+  const pOfferConsumedWithin24hSuppressed = suppressedConsumption(pOfferConsumedWithin24hCalibrated);
+  const pOfferConsumedWithin72hSuppressed = suppressedConsumption(pOfferConsumedWithin72hCalibrated);
 
   const utilization = estimateExpectedUtilization({
     cohortState: state,
@@ -596,6 +806,63 @@ export async function scoreScenarioWithMarket(input: unknown): Promise<MarketSco
     identityQualityScore,
     churnScore: inferredChurnScore,
     signalStrengthScore: alignedSignalStrengthScore,
+  });
+  const readiness = computeReadiness({
+    inferabilityScore: alignedInferabilityScore,
+    confidenceScore,
+    identityQualityScore,
+    timeDepthScore: inferredTimeDepthScore,
+    crossSectionDepthScore: inferredCrossSectionDepthScore,
+    dataDepthScore: inferredDataDepthScore,
+    signalStrengthScore: alignedSignalStrengthScore,
+    churnScore: inferredChurnScore,
+    machineBreadth: clamp(safeDiv(latestExact.uniqueMachines ?? 0, 20)) * 100,
+    historyContinuity: inferredTimeDepthScore,
+    state,
+    observation: {
+      observationCount,
+      observationsPerOffer,
+      medianPollGapMinutes,
+      maxPollGapMinutes,
+      coverageRatio,
+      offerSeenSpanMinutes,
+      cohortObservationDensityScore,
+      labelabilityScore,
+      futureWindowCoverage12h,
+      futureWindowCoverage24h,
+      futureWindowCoverage72h,
+      samplingQualityScore,
+      lifecycleObservabilityScore,
+      insufficientSampling,
+    },
+  });
+  const inferabilityDecomposition = decomposeInferability({
+    inferabilityScore: alignedInferabilityScore,
+    samplingQualityScore,
+    identityQualityScore,
+    dataDepthScore: inferredDataDepthScore,
+    churnScore: inferredChurnScore,
+  });
+  const priceAdvantage = clamp(-relativePriceVsExactMedian, -1, 1);
+  const transitionGuidance = buildTransitionGuidance({
+    recommendation: recommendation.recommendationLabel,
+    inferabilityScore: alignedInferabilityScore,
+    confidenceScore,
+    signalStrengthScore: alignedSignalStrengthScore,
+    readinessScore: readiness.readinessScore,
+    priceAdvantage,
+    churnScore: inferredChurnScore,
+  });
+  const exploratoryOpportunityScore = computeExploratoryOpportunityScore({
+    pressure: shrunkPressure,
+    readinessScore: readiness.readinessScore,
+    inferabilityScore: alignedInferabilityScore,
+    confidenceScore,
+    consumption24h: pOfferConsumedWithin24hCalibrated,
+    priceAdvantage,
+    churnScore: inferredChurnScore,
+    samplingQualityScore,
+    identityQualityScore,
   });
 
   const scenario = await prisma.hardwareScenario.create({
@@ -849,8 +1116,14 @@ export async function scoreScenarioWithMarket(input: unknown): Promise<MarketSco
     take: 400,
   });
 
+  const consumptionCalibrationRows = forecastBacktests.filter(
+    (row) => row.horizonHours === 24 && !row.consumptionLabelCensored,
+  );
   const calibration = buildCalibrationBuckets(
-    forecastBacktests.map((row) => ({ predicted: row.predictedPTight, realized: row.realizedTight })),
+    consumptionCalibrationRows.map((row) => ({
+      predicted: row.predictedConsumptionProbCalibrated ?? row.predictedConsumptionProb,
+      realized: row.realizedConsumption,
+    })),
   );
 
   const backtestCalibrationSummaryMap = new Map<
@@ -865,6 +1138,7 @@ export async function scoreScenarioWithMarket(input: unknown): Promise<MarketSco
     }
   >();
   for (const row of forecastBacktests) {
+    if (row.consumptionLabelCensored) continue;
     const key = `${row.horizonHours}:${row.calibrationBucket}:${row.inferabilityBucket ?? "na"}:${row.stateAtPrediction ?? "na"}`;
     const existing = backtestCalibrationSummaryMap.get(key);
     if (!existing) {
@@ -872,13 +1146,13 @@ export async function scoreScenarioWithMarket(input: unknown): Promise<MarketSco
         horizonHours: row.horizonHours,
         bucket: row.calibrationBucket,
         count: 1,
-        realizedRate: row.realizedTightSustained ?? row.realizedTight ? 1 : 0,
+        realizedRate: row.realizedConsumption ? 1 : 0,
         inferabilityBucket: row.inferabilityBucket,
         stateAtPrediction: row.stateAtPrediction,
       });
     } else {
       existing.count += 1;
-      existing.realizedRate += row.realizedTightSustained ?? row.realizedTight ? 1 : 0;
+      existing.realizedRate += row.realizedConsumption ? 1 : 0;
     }
   }
 
@@ -886,6 +1160,26 @@ export async function scoreScenarioWithMarket(input: unknown): Promise<MarketSco
     ...row,
     realizedRate: safeDiv(row.realizedRate, row.count),
   }));
+  const labelQualityMap = new Map<string, { horizonHours: number; quality: string; count: number }>();
+  for (const row of forecastBacktests) {
+    const quality = row.consumptionLabelQuality ?? (row.consumptionLabelCensored ? "censored" : "usable");
+    const key = `${row.horizonHours}:${quality}`;
+    const existing = labelQualityMap.get(key);
+    if (existing) {
+      existing.count += 1;
+    } else {
+      labelQualityMap.set(key, {
+        horizonHours: row.horizonHours,
+        quality,
+        count: 1,
+      });
+    }
+  }
+  const labelQualitySummary = [...labelQualityMap.values()].sort((a, b) =>
+    a.horizonHours === b.horizonHours
+      ? a.quality.localeCompare(b.quality)
+      : a.horizonHours - b.horizonHours,
+  );
 
   const machineCounts = new Map<number | null, number>();
   for (const offer of latestOffers) {
@@ -918,11 +1212,41 @@ export async function scoreScenarioWithMarket(input: unknown): Promise<MarketSco
     confidenceNotes.push("Identity quality is weak; relisting noise may distort lifecycle interpretation.");
   if ((latestExact.machineConcentrationShareTop3 ?? 0) > 0.6)
     confidenceNotes.push("Supply concentration is high, increasing fragility risk.");
+  if (consumptionCalibrationRows.length < 25)
+    confidenceNotes.push("Consumption calibration is sparse for this cohort; treat probability bins as low-support.");
   if (confidenceNotes.length === 0) confidenceNotes.push("Data depth and persistence are within normal range.");
+
+  const suppressionReasons: string[] = [];
+  if (recommendation.forecastSuppressed) {
+    suppressionReasons.push(
+      recommendation.vetoReason === "non_inferable"
+        ? "Suppressed: regime is non-inferable."
+        : recommendation.vetoReason === "low_inferability"
+          ? "Suppressed: inferability is below conservative threshold."
+          : recommendation.vetoReason === "identity_quality"
+            ? "Suppressed: identity continuity is too weak."
+            : recommendation.vetoReason === "churn_dominated"
+              ? "Suppressed: churn-dominated signal is not decision-grade."
+              : "Suppressed by conservative guardrails.",
+    );
+  }
+
+  const samplingReasons: string[] = [];
+  if (insufficientSampling) samplingReasons.push("Observation density is below sufficiency threshold.");
+  if (maxPollGapMinutes > 20) samplingReasons.push("Polling gaps are too wide for robust lifecycle inference.");
+  if (coverageRatio < 0.55) samplingReasons.push("Coverage ratio is low relative to expected polling frequency.");
+  if (samplingReasons.length === 0) samplingReasons.push("Sampling quality is acceptable.");
+
+  const dataFreshnessQuality: "high" | "medium" | "low" =
+    medianPollGapMinutes <= 5 && coverageRatio >= 0.75
+      ? "high"
+      : medianPollGapMinutes <= 10 && coverageRatio >= 0.5
+        ? "medium"
+        : "low";
 
   return {
     modelVersion: MODEL_VERSION,
-    calibrationVersion: CALIBRATION_VERSION,
+    calibrationVersion: calibrationPayload?.calibrationVersion ?? CALIBRATION_VERSION,
     scenarioId: scenario.id,
     scenarioForecastId: scenarioForecast.id,
     recommendation: recommendation.recommendationLabel,
@@ -936,6 +1260,8 @@ export async function scoreScenarioWithMarket(input: unknown): Promise<MarketSco
       pressure: Number((shrunkPressure).toFixed(2)),
       movementScore: Number(inferredMovementScore.toFixed(2)),
       confidenceScore: Number(confidenceScore.toFixed(2)),
+      timeDepthScore: Number(inferredTimeDepthScore.toFixed(2)),
+      crossSectionDepthScore: Number(inferredCrossSectionDepthScore.toFixed(2)),
       dataDepthScore: Number(inferredDataDepthScore.toFixed(2)),
       noiseScore: Number(inferredNoiseScore.toFixed(2)),
       churnScore: Number(inferredChurnScore.toFixed(2)),
@@ -984,6 +1310,12 @@ export async function scoreScenarioWithMarket(input: unknown): Promise<MarketSco
       pOfferConsumedWithin12h: pOfferConsumedWithin12hSuppressed,
       pOfferConsumedWithin24h: pOfferConsumedWithin24hSuppressed,
       pOfferConsumedWithin72h: pOfferConsumedWithin72hSuppressed,
+      pOfferConsumedWithin12hRaw: pOfferConsumedWithin12hRaw,
+      pOfferConsumedWithin24hRaw: pOfferConsumedWithin24hRaw,
+      pOfferConsumedWithin72hRaw: pOfferConsumedWithin72hRaw,
+      pOfferConsumedWithin12hCalibrated: pOfferConsumedWithin12hCalibrated,
+      pOfferConsumedWithin24hCalibrated: pOfferConsumedWithin24hCalibrated,
+      pOfferConsumedWithin72hCalibrated: pOfferConsumedWithin72hCalibrated,
     },
     utilization: {
       expected: utilization.expectedUtilization,
@@ -1019,6 +1351,66 @@ export async function scoreScenarioWithMarket(input: unknown): Promise<MarketSco
       inferabilityScore: Number(alignedInferabilityScore.toFixed(2)),
       signalStrengthScore: Number(alignedSignalStrengthScore.toFixed(2)),
       identityQualityScore: Number(identityQualityScore.toFixed(2)),
+    },
+    observationQuality: {
+      observationCount,
+      observationsPerOffer: Number(observationsPerOffer.toFixed(2)),
+      medianPollGapMinutes: Number(medianPollGapMinutes.toFixed(2)),
+      maxPollGapMinutes: Number(maxPollGapMinutes.toFixed(2)),
+      coverageRatio: Number(coverageRatio.toFixed(3)),
+      offerSeenSpanMinutes: Number(offerSeenSpanMinutes.toFixed(2)),
+      cohortObservationDensityScore: Number(cohortObservationDensityScore.toFixed(2)),
+      labelabilityScore: Number(labelabilityScore.toFixed(2)),
+      futureWindowCoverage12h: Number(futureWindowCoverage12h.toFixed(3)),
+      futureWindowCoverage24h: Number(futureWindowCoverage24h.toFixed(3)),
+      futureWindowCoverage72h: Number(futureWindowCoverage72h.toFixed(3)),
+      samplingQualityScore: Number(samplingQualityScore.toFixed(2)),
+      lifecycleObservabilityScore: Number(lifecycleObservabilityScore.toFixed(2)),
+      insufficientSampling,
+      dataFreshnessQuality,
+    },
+    inferabilityDecomposition,
+    readiness,
+    suppressionReasons,
+    samplingReasons,
+    nearestUpgrade: transitionGuidance.nearestUpgrade,
+    nearestDowngrade: transitionGuidance.nearestDowngrade,
+    upgradeGuidance: transitionGuidance.upgradeGuidance,
+    downgradeRiskFactors: transitionGuidance.downgradeRiskFactors,
+    exploratoryOpportunityScore,
+    displayRecommendationReason: recommendation.recommendationReasonPrimary,
+    unsuppressedProbabilities: {
+      tight: {
+        p24hRaw: forecast.pTight24h,
+        p72hRaw: forecast.pTight72h,
+        p7dRaw: forecast.pTight7d,
+        p24hConservative: suppressedForecast.pTight24h,
+      },
+      priceDirection24h: {
+        upRaw: forecast.pPriceUp24h,
+        flatRaw: forecast.pPriceFlat24h,
+        downRaw: forecast.pPriceDown24h,
+      },
+      consumption: {
+        p12hRaw: pOfferConsumedWithin12hRaw,
+        p24hRaw: pOfferConsumedWithin24hRaw,
+        p72hRaw: pOfferConsumedWithin72hRaw,
+        p12hCalibrated: pOfferConsumedWithin12hCalibrated,
+        p24hCalibrated: pOfferConsumedWithin24hCalibrated,
+        p72hCalibrated: pOfferConsumedWithin72hCalibrated,
+      },
+    },
+    compareMetrics: {
+      pressure: Number(shrunkPressure.toFixed(2)),
+      readiness: readiness.readinessScore,
+      inferability: Number(alignedInferabilityScore.toFixed(2)),
+      confidence: Number(confidenceScore.toFixed(2)),
+      samplingQuality: Number(samplingQualityScore.toFixed(2)),
+      identityQuality: Number(identityQualityScore.toFixed(2)),
+      lifecycleObservability: Number(lifecycleObservabilityScore.toFixed(2)),
+      priceAdvantage: Number(priceAdvantage.toFixed(4)),
+      churnPenalty: Number(inferredChurnScore.toFixed(2)),
+      pConsumed24h: Number(pOfferConsumedWithin24hCalibrated.toFixed(4)),
     },
     explanation: {
       observed: [
@@ -1072,6 +1464,7 @@ export async function scoreScenarioWithMarket(input: unknown): Promise<MarketSco
       machineConcentration,
       cohortComparisons,
       backtestCalibrationSummary,
+      labelQualitySummary,
     },
     trends: {
       window6h: computeWindowTrendSummary(exactSeries, latestExact.bucketStartUtc, "6h"),

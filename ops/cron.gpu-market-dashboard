@@ -1,2 +1,2 @@
-# Run every 30 minutes (UTC half-hour cadence)
-*/30 * * * * cd /Users/skylar/Dev/gpu-market-dashboard && /usr/bin/env zsh -lc 'npm run collect && npm run recompute >> /tmp/gpu-market-dashboard-cron.log 2>&1'
+# Run scheduler every 2 minutes; scheduler enforces tiered source/GPU cadence.
+*/2 * * * * cd /Users/skylar/Dev/gpu-market-dashboard && /usr/bin/env zsh -lc 'npm run poll:scheduler >> /tmp/gpu-market-dashboard-cron.log 2>&1'

@@ -64,6 +64,8 @@ export type TrendPoint = {
   pressurePersistence?: number | null;
   state?: string | null;
   stateConfidence?: number | null;
+  timeDepthScore?: number | null;
+  crossSectionDepthScore?: number | null;
   dataDepthScore?: number | null;
   noiseScore?: number | null;
   churnScore?: number | null;
@@ -171,6 +173,10 @@ export function clamp(value: number, min = 0, max = 1): number {
 export function safeDiv(numerator: number, denominator: number, fallback = 0): number {
   if (!Number.isFinite(denominator) || denominator === 0) return fallback;
   return numerator / denominator;
+}
+
+export function combineDepthScores(timeDepthScore: number, crossSectionDepthScore: number): number {
+  return clamp(0.45 * (timeDepthScore / 100) + 0.55 * (crossSectionDepthScore / 100), 0, 1) * 100;
 }
 
 export function percentile(values: number[], p: number): number | null {
@@ -1099,9 +1105,9 @@ export function buildRecommendation(
   return buildRecommendationLegacy(input);
 }
 
-export function brierScore(items: Array<{ predicted: number; realized: boolean }>): number {
+export function brierScore(items: Array<{ predicted: number; realized: boolean | number }>): number {
   if (items.length === 0) return 0;
-  return mean(items.map((item) => (item.predicted - (item.realized ? 1 : 0)) ** 2));
+  return mean(items.map((item) => (item.predicted - (typeof item.realized === "number" ? item.realized : item.realized ? 1 : 0)) ** 2));
 }
 
 export type CalibrationBucket = {
@@ -1112,10 +1118,10 @@ export type CalibrationBucket = {
 };
 
 export function buildCalibrationBuckets(
-  items: Array<{ predicted: number; realized: boolean }>,
+  items: Array<{ predicted: number; realized: boolean | number }>,
   step = 0.1,
 ): CalibrationBucket[] {
-  const bucketMap = new Map<string, Array<{ predicted: number; realized: boolean }>>();
+  const bucketMap = new Map<string, Array<{ predicted: number; realized: boolean | number }>>();
 
   for (const item of items) {
     const lower = Math.floor(clamp(item.predicted) / step) * step;
@@ -1132,8 +1138,87 @@ export function buildCalibrationBuckets(
       bucket,
       count: values.length,
       avgPredicted: mean(values.map((value) => value.predicted)),
-      realizedRate: mean(values.map((value) => (value.realized ? 1 : 0))),
+      realizedRate: mean(values.map((value) => (typeof value.realized === "number" ? value.realized : value.realized ? 1 : 0))),
     }));
+}
+
+export type EmpiricalCalibrationBucket = {
+  bucket: string;
+  count: number;
+  avgRawPredicted: number;
+  avgCalibratedPredicted: number;
+  realizedRate: number;
+};
+
+export function buildEmpiricalCalibrator(
+  items: Array<{ predicted: number; realized: boolean | number }>,
+  input: { step?: number; minCount?: number; priorWeight?: number } = {},
+): {
+  step: number;
+  globalRate: number;
+  buckets: EmpiricalCalibrationBucket[];
+  calibrate: (rawPredicted: number) => number;
+} {
+  const step = input.step ?? 0.1;
+  const minCount = input.minCount ?? 20;
+  const priorWeight = input.priorWeight ?? 8;
+  const clamped = items.map((item) => ({
+    predicted: clamp(item.predicted),
+    realized: typeof item.realized === "number" ? clamp(item.realized) : item.realized ? 1 : 0,
+  }));
+  const globalRate = clamped.length > 0 ? mean(clamped.map((item) => item.realized)) : 0.5;
+
+  const bucketMap = new Map<string, Array<{ predicted: number; realized: number }>>();
+  for (const item of clamped) {
+    const lower = Math.floor(item.predicted / step) * step;
+    const upper = Math.min(1, lower + step);
+    const key = `${lower.toFixed(1)}-${upper.toFixed(1)}`;
+    const existing = bucketMap.get(key) ?? [];
+    existing.push(item);
+    bucketMap.set(key, existing);
+  }
+
+  const rateByBucket = new Map<string, number>();
+  const countByBucket = new Map<string, number>();
+  for (const [bucket, values] of bucketMap.entries()) {
+    const bucketCount = values.length;
+    const realizedRate = mean(values.map((value) => value.realized));
+    const smoothedRate = (realizedRate * bucketCount + globalRate * priorWeight) / (bucketCount + priorWeight);
+    rateByBucket.set(bucket, smoothedRate);
+    countByBucket.set(bucket, bucketCount);
+  }
+
+  const calibrate = (rawPredicted: number): number => {
+    const clampedRaw = clamp(rawPredicted);
+    const lower = Math.floor(clampedRaw / step) * step;
+    const upper = Math.min(1, lower + step);
+    const key = `${lower.toFixed(1)}-${upper.toFixed(1)}`;
+    const rate = rateByBucket.get(key);
+    const count = countByBucket.get(key) ?? 0;
+    if (rate == null || count < minCount) {
+      // Blend toward global base rate when bucket support is thin.
+      const blend = clamp(count / Math.max(minCount, 1));
+      return clamp(clampedRaw * blend + globalRate * (1 - blend));
+    }
+    return clamp(rate);
+  };
+
+  const buckets: EmpiricalCalibrationBucket[] = [...bucketMap.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([bucket, values]) => {
+      const avgRawPredicted = mean(values.map((value) => value.predicted));
+      const realizedRate = mean(values.map((value) => value.realized));
+      const avgCalibratedPredicted = mean(values.map((value) => calibrate(value.predicted)));
+      return {
+        bucket,
+        count: values.length,
+        avgRawPredicted,
+        avgCalibratedPredicted,
+        realizedRate,
+      };
+    });
+
+  return { step, globalRate, buckets, calibrate };
 }
 
 export function computeNoiseScore(points: TrendPoint[]): number {

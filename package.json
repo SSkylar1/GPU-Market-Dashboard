@@ -11,6 +11,7 @@
     "db:migrate": "prisma migrate deploy",
     "collect": "tsx scripts/collectSnapshots.ts",
     "recompute": "tsx scripts/recomputeMetrics.ts",
+    "poll:scheduler": "tsx scripts/runPollingScheduler.ts",
     "backtest": "tsx scripts/backtestForecasts.ts",
     "debug:identity": "tsx scripts/debugOfferIdentity.ts",
     "status": "tsx scripts/pipelineStatus.ts",

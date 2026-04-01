@@ -2,6 +2,12 @@ import { z } from "zod";
 import { prisma } from "@/lib/db/prisma";
 import { scoreScenarioWithMarket } from "@/lib/scoring/marketScore";
 import { estimatePowerAndCost } from "@/lib/scoring/hardwareDefaults";
+import {
+  buildTransitionGuidance,
+  computeExploratoryOpportunityScore,
+  computeReadiness,
+  decomposeInferability,
+} from "@/lib/scoring/readiness";
 
 const inputSchema = z.object({
   gpuName: z.string().min(1),
@@ -70,6 +76,17 @@ export async function GET() {
     uniqueMachines: number | null;
     inferabilityScore: number | null;
     signalStrengthScore: number | null;
+    identityQualityScore: number | null;
+    churnScore: number | null;
+    observationCount: number | null;
+    observationsPerOffer: number | null;
+    medianPollGapMinutes: number | null;
+    maxPollGapMinutes: number | null;
+    coverageRatio: number | null;
+    cohortObservationDensityScore: number | null;
+    samplingQualityScore: number | null;
+    lifecycleObservabilityScore: number | null;
+    insufficientSampling: boolean | null;
   }>();
 
   const latestRows = await prisma.gpuTrendAggregate.findMany({
@@ -89,6 +106,17 @@ export async function GET() {
       uniqueMachines: true,
       inferabilityScore: true,
       signalStrengthScore: true,
+      identityQualityScore: true,
+      churnScore: true,
+      observationCount: true,
+      observationsPerOffer: true,
+      medianPollGapMinutes: true,
+      maxPollGapMinutes: true,
+      coverageRatio: true,
+      cohortObservationDensityScore: true,
+      samplingQualityScore: true,
+      lifecycleObservabilityScore: true,
+      insufficientSampling: true,
     },
   });
 
@@ -134,6 +162,7 @@ export async function GET() {
       latestUniqueMachines: latest?.uniqueMachines ?? null,
       latestInferabilityScore: latest?.inferabilityScore ?? null,
       latestSignalStrengthScore: latest?.signalStrengthScore ?? null,
+      latestIdentityQualityScore: latest?.identityQualityScore ?? null,
       defaults: {
         ...estimatePowerAndCost(row.gpuName),
         gpuCount: row.numGpus ?? 1,
@@ -143,6 +172,145 @@ export async function GET() {
       },
     };
   });
+
+  const cohortUniverseRaw = filtered
+    .map((row) => {
+      const key = `${row.gpuName}::${row.numGpus ?? "combined"}::${row.offerType ?? "combined"}`;
+      const latest = latestByCohort.get(key);
+      if (!latest) return null;
+
+      const inferabilityScore = latest.inferabilityScore ?? 0;
+      const confidenceScore = latest.stateConfidence ?? 0;
+      const identityQualityScore = latest.identityQualityScore ?? 0;
+      const samplingQualityScore = latest.samplingQualityScore ?? 0;
+      const lifecycleObservabilityScore = latest.lifecycleObservabilityScore ?? 0;
+      const churnScore = latest.churnScore ?? 0;
+      const readiness = computeReadiness({
+        inferabilityScore,
+        confidenceScore,
+        identityQualityScore,
+        timeDepthScore: 55,
+        crossSectionDepthScore: Math.min(100, (latest.uniqueMachines ?? 0) * 5),
+        dataDepthScore: Math.min(100, 45 + (latest.observationCount ?? 0)),
+        signalStrengthScore: latest.signalStrengthScore ?? 0,
+        churnScore,
+        machineBreadth: Math.min(100, (latest.uniqueMachines ?? 0) * 5),
+        historyContinuity: Math.min(100, (latest.observationCount ?? 0) * 2),
+        state: latest.state ?? "balanced",
+        observation: {
+          observationCount: latest.observationCount ?? 0,
+          observationsPerOffer: latest.observationsPerOffer ?? 0,
+          medianPollGapMinutes: latest.medianPollGapMinutes ?? 30,
+          maxPollGapMinutes: latest.maxPollGapMinutes ?? 30,
+          coverageRatio: latest.coverageRatio ?? 0,
+          offerSeenSpanMinutes: (latest.observationCount ?? 0) * 30,
+          cohortObservationDensityScore: latest.cohortObservationDensityScore ?? 0,
+          labelabilityScore: 50,
+          futureWindowCoverage12h: 0,
+          futureWindowCoverage24h: 0,
+          futureWindowCoverage72h: 0,
+          samplingQualityScore,
+          lifecycleObservabilityScore,
+          insufficientSampling: latest.insufficientSampling ?? false,
+        },
+      });
+      const inferredRecommendation =
+        inferabilityScore < 35 || identityQualityScore < 40
+          ? "Avoid"
+          : readiness.readinessScore >= 78 && inferabilityScore >= 68
+            ? "Buy"
+            : readiness.readinessScore >= 66
+              ? "Buy if discounted"
+              : readiness.readinessScore >= 54
+                ? "Watch"
+                : "Speculative";
+      const transitionGuidance = buildTransitionGuidance({
+        recommendation: inferredRecommendation,
+        inferabilityScore,
+        confidenceScore,
+        signalStrengthScore: latest.signalStrengthScore ?? 0,
+        readinessScore: readiness.readinessScore,
+        priceAdvantage: 0,
+        churnScore,
+      });
+      const exploratoryOpportunityScore = computeExploratoryOpportunityScore({
+        pressure: latest.cohortPressureScore ?? 0,
+        readinessScore: readiness.readinessScore,
+        inferabilityScore,
+        confidenceScore,
+        consumption24h: Math.min(1, Math.max(0, (latest.cohortPressureScore ?? 50) / 100)),
+        priceAdvantage: 0,
+        churnScore,
+        samplingQualityScore,
+        identityQualityScore,
+      });
+      const inferabilityDecomposition = decomposeInferability({
+        inferabilityScore,
+        samplingQualityScore,
+        identityQualityScore,
+        dataDepthScore: Math.min(100, 45 + (latest.observationCount ?? 0)),
+        churnScore,
+      });
+
+      return {
+        key,
+        gpuName: row.gpuName,
+        cohortNumGpus: row.numGpus,
+        cohortOfferType: row.offerType,
+        recommendation: inferredRecommendation,
+        state: latest.state ?? "balanced",
+        confidence: confidenceScore,
+        inferability: inferabilityScore,
+        readinessScore: readiness.readinessScore,
+        readinessBand: readiness.readinessBand,
+        readinessTags: readiness.graduationTags,
+        pressure: latest.cohortPressureScore ?? 0,
+        signalStrengthScore: latest.signalStrengthScore ?? 0,
+        samplingQualityScore,
+        identityQualityScore,
+        lifecycleObservabilityScore,
+        observationCount: latest.observationCount ?? 0,
+        observationsPerOffer: latest.observationsPerOffer ?? 0,
+        medianPollGapMinutes: latest.medianPollGapMinutes ?? 30,
+        maxPollGapMinutes: latest.maxPollGapMinutes ?? 30,
+        coverageRatio: latest.coverageRatio ?? 0,
+        churnScore,
+        insufficientSampling: latest.insufficientSampling ?? false,
+        exploratoryOpportunityScore,
+        nearestUpgrade: transitionGuidance.nearestUpgrade,
+        nearestDowngrade: transitionGuidance.nearestDowngrade,
+        upgradeGuidance: transitionGuidance.upgradeGuidance,
+        downgradeRiskFactors: transitionGuidance.downgradeRiskFactors,
+        inferabilityDecomposition,
+      };
+    })
+    .filter((row): row is NonNullable<typeof row> => row != null);
+
+  const sortedExploratory = [...cohortUniverseRaw].sort(
+    (a, b) => b.exploratoryOpportunityScore - a.exploratoryOpportunityScore,
+  );
+  const cohortUniverse = sortedExploratory.map((row, index) => ({
+    ...row,
+    exploratoryRank: index + 1,
+    globalRank: index + 1,
+  }));
+
+  const recommendationDistribution = cohortUniverse.reduce<Record<string, number>>((acc, row) => {
+    acc[row.recommendation] = (acc[row.recommendation] ?? 0) + 1;
+    return acc;
+  }, {});
+  const regimeDistribution = cohortUniverse.reduce<Record<string, number>>((acc, row) => {
+    acc[row.state] = (acc[row.state] ?? 0) + 1;
+    return acc;
+  }, {});
+  const suppressionSummary = {
+    suppressedCount: cohortUniverse.filter((row) => row.recommendation === "Avoid").length,
+    nearUsableCount: cohortUniverse.filter((row) => row.readinessTags.includes("Near usable")).length,
+    underSampledCount: cohortUniverse.filter((row) => row.readinessTags.includes("Under-sampled")).length,
+    identityConstrainedCount: cohortUniverse.filter((row) => row.readinessTags.includes("Identity issue")).length,
+    churnHeavyCount: cohortUniverse.filter((row) => row.readinessTags.includes("Churn-heavy")).length,
+    graduatingSoonCount: cohortUniverse.filter((row) => row.readinessTags.includes("Graduating soon")).length,
+  };
 
   const recentScenarioForecasts = await prisma.scenarioForecast.findMany({
     orderBy: { createdAt: "desc" },
@@ -161,6 +329,15 @@ export async function GET() {
 
   return Response.json({
     gpuOptions,
+    cohortUniverse,
+    recommendationDistribution,
+    regimeDistribution,
+    suppressionSummary,
+    pollingSummary: {
+      highPriorityTargetMinutes: "2-5",
+      generalTargetMinutes: "5-10",
+      longTailTargetMinutes: "10-20",
+    },
     recentScenarios: recentScenarioForecasts.map((item) => ({
       id: item.scenario.id,
       gpuName: item.scenario.gpuName,

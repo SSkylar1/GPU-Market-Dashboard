@@ -93,10 +93,19 @@ model OfferLifecycle {
   firstSeenAt                    DateTime
   lastSeenAt                     DateTime
   totalVisibleSnapshots          Int
+  seenCount                      Int?
   totalVisibleHours              Float
+  cumulativeVisibleMinutes       Float?
+  offerSeenSpanMinutes           Float?
   disappearanceCount             Int
   reappearanceCount              Int
+  firstMissingAt                 DateTime?
+  reappearedAt                   DateTime?
+  gapDurationMinutes             Float?
+  visibilitySegmentCount         Int?
   longestContinuousVisibleHours  Float
+  estimatedConsumedAt            DateTime?
+  insufficientObservation        Boolean?
   latestKnownPricePerHour        Float?
   latestKnownReliabilityScore    Float?
   firstKnownPricePerHour         Float?
@@ -230,6 +239,8 @@ model GpuTrendAggregate {
   pressurePersistence                Float?
   state                              String?
   stateConfidence                    Float?
+  timeDepthScore                     Float?
+  crossSectionDepthScore             Float?
   dataDepthScore                     Float?
   noiseScore                         Float?
   configVsFamilyPressureDelta        Float?
@@ -253,6 +264,20 @@ model GpuTrendAggregate {
   signalStrengthScore                Float?
   inferabilityScore                  Float?
   identityQualityScore               Float?
+  observationCount                   Int?
+  observationsPerOffer               Float?
+  medianPollGapMinutes               Float?
+  maxPollGapMinutes                  Float?
+  coverageRatio                      Float?
+  offerSeenSpanMinutes               Float?
+  cohortObservationDensityScore      Float?
+  labelabilityScore                  Float?
+  futureWindowCoverage12h            Float?
+  futureWindowCoverage24h            Float?
+  futureWindowCoverage72h            Float?
+  samplingQualityScore               Float?
+  lifecycleObservabilityScore        Float?
+  insufficientSampling               Boolean?
   createdAt                          DateTime @default(now())
   updatedAt                          DateTime @updatedAt
 
@@ -385,7 +410,17 @@ model ForecastBacktest {
   predictedPPriceUp        Float
   realizedPriceUp          Boolean
   predictedConsumptionProb Float
+  predictedConsumptionProbRaw Float?
+  predictedConsumptionProbCalibrated Float?
   realizedConsumption      Boolean
+  realizedConsumptionLegacy Boolean?
+  consumptionLabelCensored Boolean @default(false)
+  consumptionLabelQuality   String?
+  timeToReappearanceBuckets Float?
+  timeToReappearanceHours  Float?
+  realizedConsumedWithin12h Boolean?
+  realizedConsumedWithin24h Boolean?
+  realizedConsumedWithin72h Boolean?
   realizedTightSustained   Boolean?
   confidenceBucket         String?
   inferabilityBucket       String?

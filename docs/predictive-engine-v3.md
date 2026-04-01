@@ -106,3 +106,43 @@ v3.1 is a focused refinement that removes internal contradictions observed in ch
   - `forecastSuppressed`
   - `vetoReason` (`non_inferable`, `low_inferability`, `identity_quality`, `churn_dominated`)
 - Payload confidence block mirrors suppression to avoid mixed messaging.
+
+## v3.2 Consumption Label + Calibration
+
+### Consumption label semantics
+- Realized consumption is now delay-based and horizon-specific.
+- An offer is labeled consumed within horizon `H` when:
+  - it disappears at `t`
+  - it does not reappear within `H`
+  - the future window has at least `H` hours of observation
+- Labels are computed for `12h`, `24h`, and `72h`.
+- If future coverage is insufficient for a horizon, that event is censored for that horizon.
+
+### Backtest alignment
+- Consumption backtest rows now use the same horizon semantics as model outputs:
+  - `pOfferConsumedWithin12h` ↔ `realizedConsumedWithin12h`
+  - `pOfferConsumedWithin24h` ↔ `realizedConsumedWithin24h`
+  - `pOfferConsumedWithin72h` ↔ `realizedConsumedWithin72h`
+- Censored labels are persisted (`consumptionLabelCensored`) and excluded from Brier/calibration calculations.
+
+### Calibration
+- v3.2 adds lightweight empirical bucket calibration (`consumption-cal-v2`) for consumption probabilities.
+- Raw and calibrated probabilities are both persisted in backtest rows:
+  - `predictedConsumptionProbRaw`
+  - `predictedConsumptionProbCalibrated`
+- Calibration artifacts are generated at:
+  - `docs/artifacts/consumption-calibration-v2.json`
+
+### Depth scoring cleanup
+- Depth is now explicitly split into:
+  - `timeDepthScore`
+  - `crossSectionDepthScore`
+- `dataDepthScore` is now a weighted combination with stronger cross-sectional weight so long history alone cannot make sparse cohorts look deep.
+
+### Validation scorecard + diagnostics
+- Standard validation artifacts are produced by `npm run backtest`:
+  - `docs/validation-scorecard.md`
+  - `docs/artifacts/validation-scorecard-v32-backtest.json`
+  - `docs/artifacts/cohort-comparison-v32.json`
+  - `docs/artifacts/inferability-distribution-v32.json`
+- These include horizon-wise consumption Brier, calibration buckets, usable/censored counts, representative cohort comparisons, inferability distribution bins, and recommendation-bucket outcome summaries.
