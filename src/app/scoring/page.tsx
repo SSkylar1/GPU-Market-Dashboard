@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import {
   Area,
@@ -571,7 +572,7 @@ export default function ScoringPage() {
   function toggleCompare(key: string) {
     setSelectedCompareKeys((current) => {
       if (current.includes(key)) return current.filter((item) => item !== key);
-      if (current.length >= 5) return current;
+      if (current.length >= 10) return current;
       return [...current, key];
     });
   }
@@ -647,7 +648,20 @@ export default function ScoringPage() {
 
   return (
     <main className="mx-auto w-full max-w-7xl p-4 text-sm text-zinc-100 md:p-8">
-      <h1 className="mb-4 text-2xl font-semibold">Predictive Probability Engine</h1>
+      <header className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-2xl font-semibold">Predictive Probability Engine</h1>
+        <nav className="flex gap-3 text-sm">
+          <Link className="text-blue-400 underline" href="/market">
+            Market
+          </Link>
+          <Link className="text-blue-400 underline" href="/pricing">
+            Pricing
+          </Link>
+          <Link className="text-blue-400 underline" href="/ops">
+            Ops
+          </Link>
+        </nav>
+      </header>
 
       <section className="mb-4 grid gap-3 rounded border border-zinc-700 bg-zinc-900 p-3 md:grid-cols-3">
         <div className="rounded border border-zinc-700 bg-zinc-950 p-3">
@@ -758,7 +772,7 @@ export default function ScoringPage() {
               <option value="inferability">Inferability</option>
             </select>
           </label>
-          <p className="text-xs text-zinc-400">Select up to 5 cohorts for side-by-side compare.</p>
+          <p className="text-xs text-zinc-400">Select up to 10 cohorts for side-by-side compare.</p>
         </div>
         <div className="max-h-80 overflow-auto">
           <table className="min-w-full text-xs">
@@ -811,7 +825,7 @@ export default function ScoringPage() {
 
       {compareRows.length > 0 ? (
         <section className="mb-4 rounded border border-zinc-700 bg-zinc-900 p-3">
-          <p className="mb-2 text-sm font-semibold">Compare ({compareRows.length}/5)</p>
+          <p className="mb-2 text-sm font-semibold">Compare ({compareRows.length}/10)</p>
           <div className="overflow-x-auto">
             <table className="min-w-full text-xs">
               <thead className="text-zinc-400">

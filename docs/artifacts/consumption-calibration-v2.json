@@ -1,46 +1,38 @@
 {
-  "generatedAt": "2026-04-01T14:10:38.085Z",
+  "generatedAt": "2026-04-03T19:52:08.687Z",
   "modelVersion": "predictive-v3.2",
   "calibrationVersion": "consumption-cal-v2",
   "horizons": {
     "12": {
-      "globalRate": 0.24654538224475595,
+      "globalRate": 0.05473150582050319,
       "step": 0.1,
       "buckets": [
         {
           "bucket": "0.4-0.5",
-          "count": 80472,
-          "avgRawPredicted": 0.47915137598678237,
-          "avgCalibratedPredicted": 0.24654538224450778,
-          "realizedRate": 0.24654538224475595
+          "count": 10652,
+          "avgRawPredicted": 0.4790767650522601,
+          "avgCalibratedPredicted": 0.054731505820501375,
+          "realizedRate": 0.05473150582050319
         }
       ]
     },
     "24": {
-      "globalRate": 0.14626115471454681,
+      "globalRate": 0.038128249566724434,
       "step": 0.1,
       "buckets": [
         {
           "bucket": "0.4-0.5",
-          "count": 74408,
-          "avgRawPredicted": 0.4797580788013799,
-          "avgCalibratedPredicted": 0.14626115471453346,
-          "realizedRate": 0.14626115471454681
+          "count": 6347,
+          "avgRawPredicted": 0.4798252242637648,
+          "avgCalibratedPredicted": 0.038128249566718286,
+          "realizedRate": 0.038128249566724434
         }
       ]
     },
     "72": {
-      "globalRate": 0.06046297593085372,
+      "globalRate": 0.5,
       "step": 0.1,
-      "buckets": [
-        {
-          "bucket": "0.4-0.5",
-          "count": 49981,
-          "avgRawPredicted": 0.48072036957731246,
-          "avgCalibratedPredicted": 0.06046297593090101,
-          "realizedRate": 0.06046297593085372
-        }
-      ]
+      "buckets": []
     }
   }
 }

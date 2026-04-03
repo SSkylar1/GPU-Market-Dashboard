@@ -136,6 +136,9 @@ export default function MarketPage() {
           <Link className="text-blue-700 underline" href="/pricing">
             Pricing
           </Link>
+          <Link className="text-blue-700 underline" href="/ops">
+            Ops
+          </Link>
         </nav>
       </header>
 
