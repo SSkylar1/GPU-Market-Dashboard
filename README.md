@@ -64,7 +64,7 @@ VAST_API_METHOD="POST"
 # required for authenticated requests
 VAST_API_KEY="your-token"
 # optional JSON body override for POST requests
-VAST_REQUEST_JSON='{"limit":100,"type":"on-demand","verified":{"eq":true}}'
+VAST_REQUEST_JSON='{"limit":5000,"type":"on-demand","verified":{"eq":true},"rentable":{"eq":true},"rented":{"eq":false}}'
 # optional secondary endpoint for stronger lease-state signal
 VAST_ACTIVE_LEASES_URL="https://console.vast.ai/api/v0/instances/"
 # optional override; defaults to GET

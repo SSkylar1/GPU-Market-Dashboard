@@ -10,7 +10,7 @@
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate deploy",
     "collect": "tsx scripts/collectSnapshots.ts",
-    "recompute": "tsx scripts/recomputeMetrics.ts",
+    "recompute": "NODE_OPTIONS=--max-old-space-size=12288 tsx scripts/recomputeMetrics.ts",
     "poll:scheduler": "tsx scripts/runPollingScheduler.ts",
     "backtest": "tsx scripts/backtestForecasts.ts",
     "debug:identity": "tsx scripts/debugOfferIdentity.ts",

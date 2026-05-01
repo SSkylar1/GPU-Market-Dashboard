@@ -129,7 +129,7 @@ export function computeReadiness(input: ReadinessInput): ReadinessResult {
   const churnDominatedPenalty = input.state === "churn-dominated" ? 0.15 : 0;
   const insufficientSamplingPenalty = input.observation.insufficientSampling ? 0.16 : 0;
 
-  const score =
+  const rawScore =
     100 *
     clamp(
       0.2 * clamp(input.inferabilityScore / 100) +
@@ -148,6 +148,16 @@ export function computeReadiness(input: ReadinessInput): ReadinessResult {
         churnDominatedPenalty -
         insufficientSamplingPenalty,
     );
+  const hasMatureSampling =
+    !input.observation.insufficientSampling &&
+    input.observation.observationCount >= 288 &&
+    input.observation.samplingQualityScore >= 60 &&
+    input.observation.medianPollGapMinutes <= 10 &&
+    input.observation.maxPollGapMinutes <= 30 &&
+    input.timeDepthScore >= 60;
+  const score = hasMatureSampling
+    ? Math.max(rawScore, DEFAULT_READINESS_THRESHOLDS.tooEarlyMax + 1)
+    : rawScore;
 
   let readinessBand: ReadinessBand = "Decision-grade";
   if (score <= DEFAULT_READINESS_THRESHOLDS.tooEarlyMax) readinessBand = "Too early";

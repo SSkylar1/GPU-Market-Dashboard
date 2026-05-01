@@ -83,6 +83,41 @@ export function buildOfferIdentity(input: OfferIdentityInput): OfferIdentityResu
     round(input.inetUpMbps, 0),
   ];
 
+  const normalizedType = normalizeOfferType(input.offerType);
+  const stableCommon = [
+    input.source,
+    input.gpuName.trim().toLowerCase(),
+    String(input.numGpus),
+    normalizedType,
+    String(input.gpuRamGb ?? "na"),
+    String(input.cpuCores ?? "na"),
+    String(input.ramGb ?? "na"),
+    String(input.diskGb ?? "na"),
+    input.verified == null ? "na" : input.verified ? "v1" : "v0",
+    normalizeRegion(input.geolocation),
+    networkTier(input),
+    input.sourceFingerprint?.trim().toLowerCase() || "fp:na",
+  ];
+
+  const preferMachineIdentity = input.source.toLowerCase().includes("vast") && input.machineId != null;
+
+  if (input.machineId != null && preferMachineIdentity) {
+    const stableOfferFingerprint = `mach:${hashSegments([`m${input.machineId}`, ...stableCommon])}`;
+    const versionFingerprint = `machv:${hashSegments([
+      `m${input.machineId}`,
+      ...stableCommon,
+      ...mutableVersionSegments,
+    ])}`;
+    return {
+      offerExternalId: null,
+      fingerprint: stableOfferFingerprint,
+      stableOfferFingerprint,
+      versionFingerprint,
+      strategy: "machine_signature",
+      identityQualityScore: 0.9,
+    };
+  }
+
   if (input.offerExternalId && input.offerExternalId.trim().length > 0) {
     const externalId = input.offerExternalId.trim();
     const stableOfferFingerprint = `ext:${input.source}:${externalId}`;
@@ -100,22 +135,6 @@ export function buildOfferIdentity(input: OfferIdentityInput): OfferIdentityResu
       identityQualityScore: 1,
     };
   }
-
-  const normalizedType = normalizeOfferType(input.offerType);
-  const stableCommon = [
-    input.source,
-    input.gpuName.trim().toLowerCase(),
-    String(input.numGpus),
-    normalizedType,
-    String(input.gpuRamGb ?? "na"),
-    String(input.cpuCores ?? "na"),
-    String(input.ramGb ?? "na"),
-    String(input.diskGb ?? "na"),
-    input.verified == null ? "na" : input.verified ? "v1" : "v0",
-    normalizeRegion(input.geolocation),
-    networkTier(input),
-    input.sourceFingerprint?.trim().toLowerCase() || "fp:na",
-  ];
 
   if (input.machineId != null) {
     const stableOfferFingerprint = `mach:${hashSegments([`m${input.machineId}`, ...stableCommon])}`;

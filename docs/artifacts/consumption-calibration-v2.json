@@ -1,33 +1,17 @@
 {
-  "generatedAt": "2026-04-03T23:42:29.962Z",
+  "generatedAt": "2026-05-01T00:35:55.773Z",
   "modelVersion": "predictive-v3.2",
   "calibrationVersion": "consumption-cal-v2",
   "horizons": {
     "12": {
-      "globalRate": 0.055357586806994284,
+      "globalRate": 0.5,
       "step": 0.1,
-      "buckets": [
-        {
-          "bucket": "0.4-0.5",
-          "count": 12067,
-          "avgRawPredicted": 0.47904982878950736,
-          "avgCalibratedPredicted": 0.055357586806995734,
-          "realizedRate": 0.055357586806994284
-        }
-      ]
+      "buckets": []
     },
     "24": {
-      "globalRate": 0.035232094638035234,
+      "globalRate": 0.5,
       "step": 0.1,
-      "buckets": [
-        {
-          "bucket": "0.4-0.5",
-          "count": 7777,
-          "avgRawPredicted": 0.4797946955674506,
-          "avgCalibratedPredicted": 0.03523209463804101,
-          "realizedRate": 0.035232094638035234
-        }
-      ]
+      "buckets": []
     },
     "72": {
       "globalRate": 0.5,

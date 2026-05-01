@@ -1,2 +1,2 @@
 # Run every 5 minutes against VAST live.
-*/5 * * * * cd /Users/skylar/Dev/gpu-market-dashboard && /usr/bin/env zsh -lc '(INGEST_MODE=vast npm run collect && npm run recompute) >> /tmp/gpu-market-dashboard-cron.log 2>&1'
+*/5 * * * * cd /Users/skylar/Dev/gpu-market-dashboard && /usr/bin/env zsh -lc 'LOCK=/tmp/gpu-market-dashboard-cron.lock; if mkdir "$LOCK" 2>/dev/null; then trap "rmdir \"$LOCK\"" EXIT; (INGEST_MODE=vast npm run collect && npm run recompute) >> /tmp/gpu-market-dashboard-cron.log 2>&1; else echo "$(date -u +\%Y-\%m-\%dT\%H:\%M:\%SZ) gpu-market-dashboard cron skipped: lock held" >> /tmp/gpu-market-dashboard-cron.log; fi'

@@ -236,8 +236,10 @@ function summarizePollGapsMinutes(snapshots: Array<{ capturedAt: Date }>): {
     const deltaMinutes = (snapshots[i].capturedAt.getTime() - snapshots[i - 1].capturedAt.getTime()) / 60000;
     if (deltaMinutes > 0 && Number.isFinite(deltaMinutes)) gaps.push(deltaMinutes);
   }
-  const medianPollGapMinutes = percentile(gaps, 0.5) ?? 30;
-  const maxPollGapMinutes = gaps.length === 0 ? medianPollGapMinutes : Math.max(...gaps);
+  const recentGaps = gaps.slice(-288);
+  const qualityGaps = recentGaps.length > 0 ? recentGaps : gaps;
+  const medianPollGapMinutes = percentile(qualityGaps, 0.5) ?? 30;
+  const maxPollGapMinutes = percentile(qualityGaps, 0.95) ?? medianPollGapMinutes;
   return { medianPollGapMinutes, maxPollGapMinutes };
 }
 
@@ -302,16 +304,18 @@ function makeCohortKey(key: CohortKey): string {
 }
 
 function inferOfferIdentity(offer: Offer, source: string): OfferIdentityResolved {
+  const storedStrategy = normalizeIdentityStrategy(offer.identityStrategy);
   if (
     offer.stableOfferFingerprint &&
     offer.stableOfferFingerprint.trim().length > 0 &&
     offer.versionFingerprint &&
-    offer.versionFingerprint.trim().length > 0
+    offer.versionFingerprint.trim().length > 0 &&
+    !(source.toLowerCase().includes("vast") && storedStrategy === "external_id" && offer.machineId != null)
   ) {
     return {
       stableOfferFingerprint: offer.stableOfferFingerprint,
       versionFingerprint: offer.versionFingerprint,
-      strategy: normalizeIdentityStrategy(offer.identityStrategy),
+      strategy: storedStrategy,
       identityQualityScore: offer.identityQualityScore ?? 0.45,
       offerExternalId: offer.offerExternalId,
     };
@@ -575,15 +579,29 @@ async function upsertRollupsFromLatestSnapshot() {
 async function main() {
   const rollupSummary = await upsertRollupsFromLatestSnapshot();
 
-  const snapshots = await prisma.marketSnapshot.findMany({
+  const snapshotProfiles = await prisma.marketSnapshot.findMany({
     orderBy: { capturedAt: "asc" },
-    include: { offers: true },
+    select: { source: true, sourceQueryHash: true },
   });
 
-  if (snapshots.length === 0) {
+  if (snapshotProfiles.length === 0) {
     console.log("No snapshots available for recompute.");
     return;
   }
+
+  const latestQueryHashBySource = new Map<string, string>();
+  for (const snapshot of snapshotProfiles) {
+    latestQueryHashBySource.set(snapshot.source, snapshot.sourceQueryHash ?? "no-query-hash");
+  }
+  const latestProfileFilters = [...latestQueryHashBySource.entries()].map(([source, sourceQueryHash]) => ({
+    source,
+    sourceQueryHash: sourceQueryHash === "no-query-hash" ? null : sourceQueryHash,
+  }));
+  const snapshots = await prisma.marketSnapshot.findMany({
+    where: { OR: latestProfileFilters },
+    orderBy: { capturedAt: "asc" },
+    include: { offers: true },
+  });
 
   const lifecycleMap = new Map<string, LifecycleWorking>();
   const bucketsByKey = new Map<string, CohortBucket>();
@@ -593,6 +611,8 @@ async function main() {
 
   const snapshotsBySource = new Map<string, typeof snapshots>();
   for (const snapshot of snapshots) {
+    const latestQueryHash = latestQueryHashBySource.get(snapshot.source);
+    if ((snapshot.sourceQueryHash ?? "no-query-hash") !== latestQueryHash) continue;
     const current = snapshotsBySource.get(snapshot.source) ?? [];
     current.push(snapshot);
     snapshotsBySource.set(snapshot.source, current);

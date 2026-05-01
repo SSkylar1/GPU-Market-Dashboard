@@ -84,6 +84,34 @@ test("price edit mutates version fingerprint but not stable fingerprint", () => 
   assert.notEqual(first.versionFingerprint, second.versionFingerprint);
 });
 
+test("vast identity prefers stable machine signature over changing external offer id", () => {
+  const first = buildOfferIdentity({
+    source: "vast-live",
+    offerExternalId: "contract-a",
+    machineId: 42,
+    hostId: 7,
+    gpuName: "NVIDIA L4",
+    numGpus: 2,
+    offerType: "on-demand",
+    gpuRamGb: 24,
+    pricePerHour: 1.2,
+  });
+  const second = buildOfferIdentity({
+    source: "vast-live",
+    offerExternalId: "contract-b",
+    machineId: 42,
+    hostId: 7,
+    gpuName: "NVIDIA L4",
+    numGpus: 2,
+    offerType: "on-demand",
+    gpuRamGb: 24,
+    pricePerHour: 1.2,
+  });
+
+  assert.equal(first.strategy, "machine_signature");
+  assert.equal(first.stableOfferFingerprint, second.stableOfferFingerprint);
+});
+
 test("fingerprint collisions are surfaced", () => {
   const collisions = detectFingerprintCollisions([
     { fingerprint: "f1", signature: "a" },

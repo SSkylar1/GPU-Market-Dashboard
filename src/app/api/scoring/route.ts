@@ -78,12 +78,20 @@ export async function GET() {
     signalStrengthScore: number | null;
     identityQualityScore: number | null;
     churnScore: number | null;
+    timeDepthScore: number | null;
+    crossSectionDepthScore: number | null;
+    dataDepthScore: number | null;
     observationCount: number | null;
     observationsPerOffer: number | null;
     medianPollGapMinutes: number | null;
     maxPollGapMinutes: number | null;
     coverageRatio: number | null;
+    offerSeenSpanMinutes: number | null;
     cohortObservationDensityScore: number | null;
+    labelabilityScore: number | null;
+    futureWindowCoverage12h: number | null;
+    futureWindowCoverage24h: number | null;
+    futureWindowCoverage72h: number | null;
     samplingQualityScore: number | null;
     lifecycleObservabilityScore: number | null;
     insufficientSampling: boolean | null;
@@ -108,12 +116,20 @@ export async function GET() {
       signalStrengthScore: true,
       identityQualityScore: true,
       churnScore: true,
+      timeDepthScore: true,
+      crossSectionDepthScore: true,
+      dataDepthScore: true,
       observationCount: true,
       observationsPerOffer: true,
       medianPollGapMinutes: true,
       maxPollGapMinutes: true,
       coverageRatio: true,
+      offerSeenSpanMinutes: true,
       cohortObservationDensityScore: true,
+      labelabilityScore: true,
+      futureWindowCoverage12h: true,
+      futureWindowCoverage24h: true,
+      futureWindowCoverage72h: true,
       samplingQualityScore: true,
       lifecycleObservabilityScore: true,
       insufficientSampling: true,
@@ -185,17 +201,22 @@ export async function GET() {
       const samplingQualityScore = latest.samplingQualityScore ?? 0;
       const lifecycleObservabilityScore = latest.lifecycleObservabilityScore ?? 0;
       const churnScore = latest.churnScore ?? 0;
+      const timeDepthScore = latest.timeDepthScore ?? Math.min(100, (latest.observationCount ?? 0) / 48);
+      const crossSectionDepthScore =
+        latest.crossSectionDepthScore ?? Math.min(100, (latest.uniqueMachines ?? 0) * 5);
+      const dataDepthScore = latest.dataDepthScore ?? Math.min(100, 45 + (latest.observationCount ?? 0));
+      const historyContinuity = timeDepthScore;
       const readiness = computeReadiness({
         inferabilityScore,
         confidenceScore,
         identityQualityScore,
-        timeDepthScore: 55,
-        crossSectionDepthScore: Math.min(100, (latest.uniqueMachines ?? 0) * 5),
-        dataDepthScore: Math.min(100, 45 + (latest.observationCount ?? 0)),
+        timeDepthScore,
+        crossSectionDepthScore,
+        dataDepthScore,
         signalStrengthScore: latest.signalStrengthScore ?? 0,
         churnScore,
         machineBreadth: Math.min(100, (latest.uniqueMachines ?? 0) * 5),
-        historyContinuity: Math.min(100, (latest.observationCount ?? 0) * 2),
+        historyContinuity,
         state: latest.state ?? "balanced",
         observation: {
           observationCount: latest.observationCount ?? 0,
@@ -203,12 +224,12 @@ export async function GET() {
           medianPollGapMinutes: latest.medianPollGapMinutes ?? 30,
           maxPollGapMinutes: latest.maxPollGapMinutes ?? 30,
           coverageRatio: latest.coverageRatio ?? 0,
-          offerSeenSpanMinutes: (latest.observationCount ?? 0) * 30,
+          offerSeenSpanMinutes: latest.offerSeenSpanMinutes ?? (latest.observationCount ?? 0) * 30,
           cohortObservationDensityScore: latest.cohortObservationDensityScore ?? 0,
-          labelabilityScore: 50,
-          futureWindowCoverage12h: 0,
-          futureWindowCoverage24h: 0,
-          futureWindowCoverage72h: 0,
+          labelabilityScore: latest.labelabilityScore ?? 0,
+          futureWindowCoverage12h: latest.futureWindowCoverage12h ?? 0,
+          futureWindowCoverage24h: latest.futureWindowCoverage24h ?? 0,
+          futureWindowCoverage72h: latest.futureWindowCoverage72h ?? 0,
           samplingQualityScore,
           lifecycleObservabilityScore,
           insufficientSampling: latest.insufficientSampling ?? false,
@@ -248,7 +269,7 @@ export async function GET() {
         inferabilityScore,
         samplingQualityScore,
         identityQualityScore,
-        dataDepthScore: Math.min(100, 45 + (latest.observationCount ?? 0)),
+        dataDepthScore,
         churnScore,
       });
 

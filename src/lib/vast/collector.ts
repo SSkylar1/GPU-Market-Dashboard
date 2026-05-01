@@ -235,9 +235,11 @@ export async function collectVastOffers(): Promise<NormalizedOffer[]> {
   }
 
   const defaultQuery = {
-    limit: 100,
+    limit: 5000,
     type: "on-demand",
     verified: { eq: true },
+    rentable: { eq: true },
+    rented: { eq: false },
   };
 
   let body: string | undefined;

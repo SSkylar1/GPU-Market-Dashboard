@@ -118,9 +118,11 @@ function getSourceQueryProfile(mode: string): Prisma.InputJsonValue {
       requestJson:
         process.env.VAST_REQUEST_JSON ??
         JSON.stringify({
-          limit: 100,
+          limit: 5000,
           type: "on-demand",
           verified: { eq: true },
+          rentable: { eq: true },
+          rented: { eq: false },
         }),
     } as Prisma.InputJsonValue;
   }

@@ -1,16 +1,16 @@
 {
-  "generatedAt": "2026-04-03T23:42:29.964Z",
+  "generatedAt": "2026-05-01T00:35:55.775Z",
   "modelVersion": "predictive-v3.2",
   "calibrationVersion": "consumption-cal-v2",
   "consumptionCounts": {
     "usableByHorizon": {
-      "12": 12067,
-      "24": 7777,
+      "12": 0,
+      "24": 0,
       "72": 0
     },
     "censoredByHorizon": {
-      "12": 157,
-      "24": 171,
+      "12": 0,
+      "24": 0,
       "72": 0
     }
   },
@@ -52,1204 +52,484 @@
       "censored72": 0
     },
     {
-      "cohort": "vast-live::RTX PRO 6000 S::2::on-demand",
-      "usable12": 116,
-      "censored12": 39,
-      "usable24": 76,
-      "censored24": 79,
+      "cohort": "vast-live::RTX PRO 6000 S::1::on-demand",
+      "usable12": 0,
+      "censored12": 23,
+      "usable24": 0,
+      "censored24": 23,
       "usable72": 0,
-      "censored72": 155
+      "censored72": 23
     },
     {
       "cohort": "vast-live::RTX PRO 6000 S::combined::combined",
-      "usable12": 407,
-      "censored12": 137,
-      "usable24": 261,
-      "censored24": 283,
+      "usable12": 0,
+      "censored12": 63,
+      "usable24": 0,
+      "censored24": 63,
       "usable72": 0,
-      "censored72": 544
-    },
-    {
-      "cohort": "vast-live::RTX 5070 Ti::2::on-demand",
-      "usable12": 53,
-      "censored12": 22,
-      "usable24": 33,
-      "censored24": 42,
-      "usable72": 0,
-      "censored72": 75
-    },
-    {
-      "cohort": "vast-live::RTX 5070 Ti::combined::combined",
-      "usable12": 145,
-      "censored12": 56,
-      "usable24": 89,
-      "censored24": 112,
-      "usable72": 0,
-      "censored72": 201
-    },
-    {
-      "cohort": "vast-live::RTX PRO 6000 S::1::on-demand",
-      "usable12": 126,
-      "censored12": 44,
-      "usable24": 82,
-      "censored24": 88,
-      "usable72": 0,
-      "censored72": 170
-    },
-    {
-      "cohort": "vast-live::RTX PRO 6000 WS::1::on-demand",
-      "usable12": 127,
-      "censored12": 50,
-      "usable24": 84,
-      "censored24": 93,
-      "usable72": 0,
-      "censored72": 177
-    },
-    {
-      "cohort": "vast-live::RTX PRO 6000 WS::combined::combined",
-      "usable12": 417,
-      "censored12": 144,
-      "usable24": 274,
-      "censored24": 287,
-      "usable72": 0,
-      "censored72": 561
-    },
-    {
-      "cohort": "vast-live::RTX 5090::2::on-demand",
-      "usable12": 135,
-      "censored12": 50,
-      "usable24": 87,
-      "censored24": 98,
-      "usable72": 0,
-      "censored72": 185
-    },
-    {
-      "cohort": "vast-live::RTX 5090::combined::combined",
-      "usable12": 481,
-      "censored12": 207,
-      "usable24": 299,
-      "censored24": 389,
-      "usable72": 0,
-      "censored72": 688
-    },
-    {
-      "cohort": "vast-live::RTX 5070 Ti::4::on-demand",
-      "usable12": 38,
-      "censored12": 18,
-      "usable24": 19,
-      "censored24": 37,
-      "usable72": 0,
-      "censored72": 56
+      "censored72": 63
     },
     {
       "cohort": "vast-live::RTX 5090::1::on-demand",
-      "usable12": 164,
-      "censored12": 83,
-      "usable24": 94,
-      "censored24": 153,
-      "usable72": 0,
-      "censored72": 247
-    },
-    {
-      "cohort": "vast-live::RTX PRO 6000 WS::2::on-demand",
-      "usable12": 120,
-      "censored12": 40,
-      "usable24": 78,
-      "censored24": 82,
-      "usable72": 0,
-      "censored72": 160
-    },
-    {
-      "cohort": "vast-live::RTX PRO 6000 S::4::on-demand",
-      "usable12": 96,
-      "censored12": 40,
-      "usable24": 62,
-      "censored24": 74,
-      "usable72": 0,
-      "censored72": 136
-    },
-    {
-      "cohort": "vast-live::H200::1::on-demand",
-      "usable12": 134,
-      "censored12": 50,
-      "usable24": 89,
-      "censored24": 95,
-      "usable72": 0,
-      "censored72": 184
-    },
-    {
-      "cohort": "vast-live::H200::combined::combined",
-      "usable12": 502,
-      "censored12": 180,
-      "usable24": 333,
-      "censored24": 349,
-      "usable72": 0,
-      "censored72": 682
-    },
-    {
-      "cohort": "vast-live::RTX 3090::1::on-demand",
-      "usable12": 62,
-      "censored12": 22,
-      "usable24": 40,
-      "censored24": 44,
-      "usable72": 0,
-      "censored72": 84
-    },
-    {
-      "cohort": "vast-live::RTX 3090::combined::combined",
-      "usable12": 146,
-      "censored12": 51,
-      "usable24": 92,
-      "censored24": 105,
-      "usable72": 0,
-      "censored72": 197
-    },
-    {
-      "cohort": "vast-live::RTX 5090::4::on-demand",
-      "usable12": 123,
-      "censored12": 45,
-      "usable24": 81,
-      "censored24": 87,
-      "usable72": 0,
-      "censored72": 168
-    },
-    {
-      "cohort": "vast-live::H200::2::on-demand",
-      "usable12": 131,
-      "censored12": 42,
-      "usable24": 88,
-      "censored24": 85,
-      "usable72": 0,
-      "censored72": 173
-    },
-    {
-      "cohort": "vast-live::B200::4::on-demand",
-      "usable12": 69,
-      "censored12": 17,
-      "usable24": 42,
-      "censored24": 44,
-      "usable72": 0,
-      "censored72": 86
-    },
-    {
-      "cohort": "vast-live::B200::combined::combined",
-      "usable12": 289,
-      "censored12": 96,
-      "usable24": 184,
-      "censored24": 201,
-      "usable72": 0,
-      "censored72": 385
-    },
-    {
-      "cohort": "vast-live::RTX 5070 Ti::1::on-demand",
-      "usable12": 66,
-      "censored12": 25,
-      "usable24": 42,
-      "censored24": 49,
-      "usable72": 0,
-      "censored72": 91
-    },
-    {
-      "cohort": "vast-live::H200::4::on-demand",
-      "usable12": 116,
-      "censored12": 45,
-      "usable24": 75,
-      "censored24": 86,
-      "usable72": 0,
-      "censored72": 161
-    },
-    {
-      "cohort": "vast-live::H100 NVL::2::on-demand",
-      "usable12": 110,
-      "censored12": 41,
-      "usable24": 72,
-      "censored24": 79,
-      "usable72": 0,
-      "censored72": 151
-    },
-    {
-      "cohort": "vast-live::H100 NVL::combined::combined",
-      "usable12": 256,
-      "censored12": 83,
-      "usable24": 165,
-      "censored24": 174,
-      "usable72": 0,
-      "censored72": 339
-    },
-    {
-      "cohort": "vast-live::B200::1::on-demand",
-      "usable12": 60,
-      "censored12": 25,
-      "usable24": 37,
-      "censored24": 48,
-      "usable72": 0,
-      "censored72": 85
-    },
-    {
-      "cohort": "vast-live::RTX 5080::1::on-demand",
-      "usable12": 66,
-      "censored12": 22,
-      "usable24": 43,
-      "censored24": 45,
-      "usable72": 0,
-      "censored72": 88
-    },
-    {
-      "cohort": "vast-live::RTX 5080::combined::combined",
-      "usable12": 188,
-      "censored12": 64,
-      "usable24": 122,
-      "censored24": 130,
-      "usable72": 0,
-      "censored72": 252
-    },
-    {
-      "cohort": "vast-live::H100 NVL::1::on-demand",
-      "usable12": 90,
-      "censored12": 28,
-      "usable24": 63,
-      "censored24": 55,
-      "usable72": 0,
-      "censored72": 118
-    },
-    {
-      "cohort": "vast-live::RTX 5080::2::on-demand",
-      "usable12": 65,
-      "censored12": 22,
-      "usable24": 42,
-      "censored24": 45,
-      "usable72": 0,
-      "censored72": 87
-    },
-    {
-      "cohort": "vast-live::RTX 5070::4::on-demand",
-      "usable12": 51,
-      "censored12": 18,
-      "usable24": 30,
-      "censored24": 39,
-      "usable72": 0,
-      "censored72": 69
-    },
-    {
-      "cohort": "vast-live::RTX 5070::combined::combined",
-      "usable12": 185,
-      "censored12": 65,
-      "usable24": 120,
-      "censored24": 130,
-      "usable72": 0,
-      "censored72": 250
-    },
-    {
-      "cohort": "vast-live::H100 SXM::2::on-demand",
-      "usable12": 71,
-      "censored12": 24,
-      "usable24": 46,
-      "censored24": 49,
-      "usable72": 0,
-      "censored72": 95
-    },
-    {
-      "cohort": "vast-live::H100 SXM::combined::combined",
-      "usable12": 327,
-      "censored12": 119,
-      "usable24": 209,
-      "censored24": 237,
-      "usable72": 0,
-      "censored72": 446
-    },
-    {
-      "cohort": "vast-live::H100 SXM::1::on-demand",
-      "usable12": 62,
-      "censored12": 24,
-      "usable24": 38,
-      "censored24": 48,
-      "usable72": 0,
-      "censored72": 86
-    },
-    {
-      "cohort": "vast-live::RTX 5060 Ti::1::on-demand",
-      "usable12": 60,
-      "censored12": 25,
-      "usable24": 36,
-      "censored24": 49,
-      "usable72": 0,
-      "censored72": 85
-    },
-    {
-      "cohort": "vast-live::RTX 5060 Ti::combined::combined",
-      "usable12": 213,
-      "censored12": 75,
-      "usable24": 139,
-      "censored24": 149,
-      "usable72": 0,
-      "censored72": 288
-    },
-    {
-      "cohort": "vast-live::H200::8::on-demand",
-      "usable12": 121,
-      "censored12": 43,
-      "usable24": 81,
-      "censored24": 83,
-      "usable72": 0,
-      "censored72": 164
-    },
-    {
-      "cohort": "vast-live::RTX 5070::2::on-demand",
-      "usable12": 64,
-      "censored12": 21,
-      "usable24": 44,
-      "censored24": 41,
-      "usable72": 0,
-      "censored72": 85
-    },
-    {
-      "cohort": "vast-live::RTX 5070::1::on-demand",
-      "usable12": 61,
-      "censored12": 21,
-      "usable24": 40,
-      "censored24": 42,
-      "usable72": 0,
-      "censored72": 82
-    },
-    {
-      "cohort": "vast-live::RTX 5060 Ti::2::on-demand",
-      "usable12": 68,
-      "censored12": 24,
-      "usable24": 45,
-      "censored24": 47,
-      "usable72": 0,
-      "censored72": 92
-    },
-    {
-      "cohort": "vast-live::RTX 4070S Ti::1::on-demand",
-      "usable12": 64,
-      "censored12": 21,
-      "usable24": 43,
-      "censored24": 42,
-      "usable72": 0,
-      "censored72": 85
-    },
-    {
-      "cohort": "vast-live::RTX 4070S Ti::combined::combined",
-      "usable12": 172,
-      "censored12": 62,
-      "usable24": 112,
-      "censored24": 122,
-      "usable72": 0,
-      "censored72": 234
-    },
-    {
-      "cohort": "vast-live::RTX PRO 6000 WS::4::on-demand",
-      "usable12": 92,
-      "censored12": 33,
-      "usable24": 64,
-      "censored24": 61,
-      "usable72": 0,
-      "censored72": 125
-    },
-    {
-      "cohort": "vast-live::RTX PRO 6000 S::8::on-demand",
-      "usable12": 69,
-      "censored12": 16,
-      "usable24": 41,
-      "censored24": 44,
-      "usable72": 0,
-      "censored72": 85
-    },
-    {
-      "cohort": "vast-live::RTX 4080S::1::on-demand",
-      "usable12": 65,
-      "censored12": 23,
-      "usable24": 41,
-      "censored24": 47,
-      "usable72": 0,
-      "censored72": 88
-    },
-    {
-      "cohort": "vast-live::RTX 4080S::combined::combined",
-      "usable12": 146,
-      "censored12": 55,
-      "usable24": 92,
-      "censored24": 109,
-      "usable72": 0,
-      "censored72": 201
-    },
-    {
-      "cohort": "vast-live::H100 PCIE::1::on-demand",
-      "usable12": 32,
-      "censored12": 16,
-      "usable24": 21,
-      "censored24": 27,
-      "usable72": 0,
-      "censored72": 48
-    },
-    {
-      "cohort": "vast-live::H100 PCIE::combined::combined",
-      "usable12": 32,
-      "censored12": 16,
-      "usable24": 21,
-      "censored24": 27,
-      "usable72": 0,
-      "censored72": 48
-    },
-    {
-      "cohort": "vast-live::RTX PRO 6000 WS::8::on-demand",
-      "usable12": 78,
-      "censored12": 21,
-      "usable24": 48,
-      "censored24": 51,
-      "usable72": 0,
-      "censored72": 99
-    },
-    {
-      "cohort": "vast-live::RTX 5070::8::on-demand",
-      "usable12": 8,
-      "censored12": 4,
-      "usable24": 5,
-      "censored24": 7,
-      "usable72": 0,
-      "censored72": 12
-    },
-    {
-      "cohort": "vast-live::B200::2::on-demand",
-      "usable12": 86,
-      "censored12": 28,
-      "usable24": 55,
-      "censored24": 59,
-      "usable72": 0,
-      "censored72": 114
-    },
-    {
-      "cohort": "vast-live::RTX PRO 4500::1::on-demand",
-      "usable12": 39,
-      "censored12": 13,
-      "usable24": 24,
-      "censored24": 28,
-      "usable72": 0,
-      "censored72": 52
-    },
-    {
-      "cohort": "vast-live::RTX PRO 4500::combined::combined",
-      "usable12": 50,
-      "censored12": 16,
-      "usable24": 31,
-      "censored24": 35,
-      "usable72": 0,
-      "censored72": 66
-    },
-    {
-      "cohort": "vast-live::H100 SXM::4::on-demand",
-      "usable12": 92,
-      "censored12": 36,
-      "usable24": 59,
-      "censored24": 69,
-      "usable72": 0,
-      "censored72": 128
-    },
-    {
-      "cohort": "vast-live::H200 NVL::2::on-demand",
-      "usable12": 100,
-      "censored12": 37,
-      "usable24": 77,
-      "censored24": 60,
-      "usable72": 0,
-      "censored72": 137
-    },
-    {
-      "cohort": "vast-live::H200 NVL::combined::combined",
-      "usable12": 336,
-      "censored12": 128,
-      "usable24": 250,
-      "censored24": 214,
-      "usable72": 0,
-      "censored72": 464
-    },
-    {
-      "cohort": "vast-live::A100 PCIE::1::on-demand",
-      "usable12": 35,
-      "censored12": 13,
-      "usable24": 25,
-      "censored24": 23,
-      "usable72": 0,
-      "censored72": 48
-    },
-    {
-      "cohort": "vast-live::A100 PCIE::combined::combined",
-      "usable12": 35,
-      "censored12": 13,
-      "usable24": 25,
-      "censored24": 23,
-      "usable72": 0,
-      "censored72": 48
-    },
-    {
-      "cohort": "vast-live::RTX 5080::4::on-demand",
-      "usable12": 57,
-      "censored12": 20,
-      "usable24": 37,
-      "censored24": 40,
-      "usable72": 0,
-      "censored72": 77
-    },
-    {
-      "cohort": "vast-live::RTX PRO 4000::2::on-demand",
-      "usable12": 103,
-      "censored12": 41,
-      "usable24": 63,
-      "censored24": 81,
-      "usable72": 0,
-      "censored72": 144
-    },
-    {
-      "cohort": "vast-live::RTX PRO 4000::combined::combined",
-      "usable12": 194,
-      "censored12": 72,
-      "usable24": 124,
-      "censored24": 142,
-      "usable72": 0,
-      "censored72": 266
-    },
-    {
-      "cohort": "vast-live::H200 NVL::1::on-demand",
-      "usable12": 121,
-      "censored12": 44,
-      "usable24": 85,
-      "censored24": 80,
-      "usable72": 0,
-      "censored72": 165
-    },
-    {
-      "cohort": "vast-live::A100 SXM4::2::on-demand",
-      "usable12": 52,
-      "censored12": 19,
-      "usable24": 35,
-      "censored24": 36,
-      "usable72": 0,
-      "censored72": 71
-    },
-    {
-      "cohort": "vast-live::A100 SXM4::combined::combined",
-      "usable12": 180,
-      "censored12": 63,
-      "usable24": 120,
-      "censored24": 123,
-      "usable72": 0,
-      "censored72": 243
-    },
-    {
-      "cohort": "vast-live::B200::8::on-demand",
-      "usable12": 74,
-      "censored12": 26,
-      "usable24": 50,
-      "censored24": 50,
-      "usable72": 0,
-      "censored72": 100
-    },
-    {
-      "cohort": "vast-live::RTX 4090::1::on-demand",
-      "usable12": 182,
-      "censored12": 59,
-      "usable24": 116,
-      "censored24": 125,
-      "usable72": 0,
-      "censored72": 241
-    },
-    {
-      "cohort": "vast-live::RTX 4090::combined::combined",
-      "usable12": 350,
-      "censored12": 113,
-      "usable24": 226,
-      "censored24": 237,
-      "usable72": 0,
-      "censored72": 463
-    },
-    {
-      "cohort": "vast-live::H100 SXM::8::on-demand",
-      "usable12": 102,
-      "censored12": 35,
-      "usable24": 66,
-      "censored24": 71,
-      "usable72": 0,
-      "censored72": 137
-    },
-    {
-      "cohort": "vast-live::RTX 4080::2::on-demand",
-      "usable12": 41,
-      "censored12": 17,
-      "usable24": 26,
-      "censored24": 32,
-      "usable72": 0,
-      "censored72": 58
-    },
-    {
-      "cohort": "vast-live::RTX 4080::combined::combined",
-      "usable12": 110,
-      "censored12": 41,
-      "usable24": 74,
-      "censored24": 77,
-      "usable72": 0,
-      "censored72": 151
-    },
-    {
-      "cohort": "vast-live::RTX 3090::2::on-demand",
-      "usable12": 64,
-      "censored12": 22,
-      "usable24": 41,
-      "censored24": 45,
-      "usable72": 0,
-      "censored72": 86
-    },
-    {
-      "cohort": "vast-live::A100 SXM4::8::on-demand",
-      "usable12": 36,
-      "censored12": 15,
-      "usable24": 21,
-      "censored24": 30,
-      "usable72": 0,
-      "censored72": 51
-    },
-    {
-      "cohort": "vast-live::A100 SXM4::1::on-demand",
-      "usable12": 68,
-      "censored12": 25,
-      "usable24": 48,
-      "censored24": 45,
-      "usable72": 0,
-      "censored72": 93
-    },
-    {
-      "cohort": "vast-live::RTX 4070S Ti::2::on-demand",
-      "usable12": 65,
-      "censored12": 23,
-      "usable24": 43,
-      "censored24": 45,
-      "usable72": 0,
-      "censored72": 88
-    },
-    {
-      "cohort": "vast-live::H200 NVL::4::on-demand",
-      "usable12": 67,
-      "censored12": 30,
-      "usable24": 48,
-      "censored24": 49,
+      "usable12": 0,
+      "censored12": 70,
+      "usable24": 0,
+      "censored24": 70,
+      "usable72": 0,
+      "censored72": 70
+    },
+    {
+      "cohort": "vast-live::RTX 5090::combined::combined",
+      "usable12": 0,
+      "censored12": 97,
+      "usable24": 0,
+      "censored24": 97,
       "usable72": 0,
       "censored72": 97
     },
     {
-      "cohort": "vast-live::RTX 4090::2::on-demand",
-      "usable12": 157,
-      "censored12": 53,
-      "usable24": 102,
-      "censored24": 108,
-      "usable72": 0,
-      "censored72": 210
-    },
-    {
-      "cohort": "vast-live::RTX PRO 4000::4::on-demand",
-      "usable12": 28,
-      "censored12": 14,
-      "usable24": 18,
-      "censored24": 24,
-      "usable72": 0,
-      "censored72": 42
-    },
-    {
-      "cohort": "vast-live::RTX 4070::1::on-demand",
-      "usable12": 63,
-      "censored12": 21,
-      "usable24": 41,
-      "censored24": 43,
-      "usable72": 0,
-      "censored72": 84
-    },
-    {
-      "cohort": "vast-live::RTX 4070::combined::combined",
-      "usable12": 153,
+      "cohort": "vast-live::RTX 5070 Ti::1::on-demand",
+      "usable12": 0,
       "censored12": 45,
-      "usable24": 96,
-      "censored24": 102,
-      "usable72": 0,
-      "censored72": 198
-    },
-    {
-      "cohort": "vast-live::A100 SXM4::4::on-demand",
-      "usable12": 42,
-      "censored12": 15,
-      "usable24": 27,
-      "censored24": 30,
-      "usable72": 0,
-      "censored72": 57
-    },
-    {
-      "cohort": "vast-live::RTX 4080S::2::on-demand",
-      "usable12": 52,
-      "censored12": 20,
-      "usable24": 32,
-      "censored24": 40,
-      "usable72": 0,
-      "censored72": 72
-    },
-    {
-      "cohort": "vast-live::RTX 5090::8::on-demand",
-      "usable12": 64,
-      "censored12": 30,
-      "usable24": 38,
-      "censored24": 56,
-      "usable72": 0,
-      "censored72": 94
-    },
-    {
-      "cohort": "vast-live::RTX 6000Ada::2::on-demand",
-      "usable12": 60,
-      "censored12": 21,
-      "usable24": 37,
-      "censored24": 44,
-      "usable72": 0,
-      "censored72": 81
-    },
-    {
-      "cohort": "vast-live::RTX 6000Ada::combined::combined",
-      "usable12": 101,
-      "censored12": 28,
-      "usable24": 67,
-      "censored24": 62,
-      "usable72": 0,
-      "censored72": 129
-    },
-    {
-      "cohort": "vast-live::H100 NVL::4::on-demand",
-      "usable12": 38,
-      "censored12": 9,
-      "usable24": 21,
-      "censored24": 26,
-      "usable72": 0,
-      "censored72": 47
-    },
-    {
-      "cohort": "vast-live::H200 NVL::8::on-demand",
-      "usable12": 50,
-      "censored12": 17,
-      "usable24": 40,
-      "censored24": 27,
-      "usable72": 0,
-      "censored72": 67
-    },
-    {
-      "cohort": "vast-live::RTX 4070 Ti::1::on-demand",
-      "usable12": 60,
-      "censored12": 19,
-      "usable24": 39,
-      "censored24": 40,
-      "usable72": 0,
-      "censored72": 79
-    },
-    {
-      "cohort": "vast-live::RTX 4070 Ti::combined::combined",
-      "usable12": 105,
-      "censored12": 30,
-      "usable24": 69,
-      "censored24": 66,
-      "usable72": 0,
-      "censored72": 135
-    },
-    {
-      "cohort": "vast-live::RTX 4070 Ti::2::on-demand",
-      "usable12": 48,
-      "censored12": 13,
-      "usable24": 31,
-      "censored24": 30,
-      "usable72": 0,
-      "censored72": 61
-    },
-    {
-      "cohort": "vast-live::RTX 4070S Ti::4::on-demand",
-      "usable12": 46,
-      "censored12": 19,
-      "usable24": 28,
-      "censored24": 37,
-      "usable72": 0,
-      "censored72": 65
-    },
-    {
-      "cohort": "vast-live::RTX PRO 5000::1::on-demand",
-      "usable12": 78,
-      "censored12": 17,
-      "usable24": 50,
+      "usable24": 0,
       "censored24": 45,
-      "usable72": 0,
-      "censored72": 95
-    },
-    {
-      "cohort": "vast-live::RTX PRO 5000::combined::combined",
-      "usable12": 150,
-      "censored12": 36,
-      "usable24": 97,
-      "censored24": 89,
-      "usable72": 0,
-      "censored72": 186
-    },
-    {
-      "cohort": "vast-live::RTX 5060 Ti::4::on-demand",
-      "usable12": 64,
-      "censored12": 24,
-      "usable24": 42,
-      "censored24": 46,
-      "usable72": 0,
-      "censored72": 88
-    },
-    {
-      "cohort": "vast-live::RTX 6000Ada::1::on-demand",
-      "usable12": 57,
-      "censored12": 22,
-      "usable24": 38,
-      "censored24": 41,
-      "usable72": 0,
-      "censored72": 79
-    },
-    {
-      "cohort": "vast-live::RTX 4070S::1::on-demand",
-      "usable12": 56,
-      "censored12": 20,
-      "usable24": 37,
-      "censored24": 39,
-      "usable72": 0,
-      "censored72": 76
-    },
-    {
-      "cohort": "vast-live::RTX 4070S::combined::combined",
-      "usable12": 97,
-      "censored12": 36,
-      "usable24": 60,
-      "censored24": 73,
-      "usable72": 0,
-      "censored72": 133
-    },
-    {
-      "cohort": "vast-live::RTX 3090 Ti::1::on-demand",
-      "usable12": 40,
-      "censored12": 16,
-      "usable24": 23,
-      "censored24": 33,
-      "usable72": 0,
-      "censored72": 56
-    },
-    {
-      "cohort": "vast-live::RTX 3090 Ti::combined::combined",
-      "usable12": 40,
-      "censored12": 20,
-      "usable24": 23,
-      "censored24": 37,
-      "usable72": 0,
-      "censored72": 60
-    },
-    {
-      "cohort": "vast-live::RTX PRO 4000::1::on-demand",
-      "usable12": 63,
-      "censored12": 22,
-      "usable24": 43,
-      "censored24": 42,
-      "usable72": 0,
-      "censored72": 85
-    },
-    {
-      "cohort": "vast-live::RTX 4070::2::on-demand",
-      "usable12": 62,
-      "censored12": 22,
-      "usable24": 40,
-      "censored24": 44,
-      "usable72": 0,
-      "censored72": 84
-    },
-    {
-      "cohort": "vast-live::RTX 4080::4::on-demand",
-      "usable12": 29,
-      "censored12": 13,
-      "usable24": 17,
-      "censored24": 25,
-      "usable72": 0,
-      "censored72": 42
-    },
-    {
-      "cohort": "vast-live::RTX PRO 5000::2::on-demand",
-      "usable12": 68,
-      "censored12": 23,
-      "usable24": 43,
-      "censored24": 48,
-      "usable72": 0,
-      "censored72": 91
-    },
-    {
-      "cohort": "vast-live::H100 NVL::8::on-demand",
-      "usable12": 24,
-      "censored12": 8,
-      "usable24": 12,
-      "censored24": 20,
-      "usable72": 0,
-      "censored72": 32
-    },
-    {
-      "cohort": "vast-live::RTX 4090::4::on-demand",
-      "usable12": 30,
-      "censored12": 9,
-      "usable24": 16,
-      "censored24": 23,
-      "usable72": 0,
-      "censored72": 39
-    },
-    {
-      "cohort": "vast-live::RTX 5880Ada::2::on-demand",
-      "usable12": 23,
-      "censored12": 12,
-      "usable24": 13,
-      "censored24": 22,
-      "usable72": 0,
-      "censored72": 35
-    },
-    {
-      "cohort": "vast-live::RTX 5880Ada::combined::combined",
-      "usable12": 35,
-      "censored12": 13,
-      "usable24": 20,
-      "censored24": 28,
-      "usable72": 0,
-      "censored72": 48
-    },
-    {
-      "cohort": "vast-live::RTX 3080 Ti::1::on-demand",
-      "usable12": 40,
-      "censored12": 17,
-      "usable24": 25,
-      "censored24": 32,
-      "usable72": 0,
-      "censored72": 57
-    },
-    {
-      "cohort": "vast-live::RTX 3080 Ti::combined::combined",
-      "usable12": 40,
-      "censored12": 17,
-      "usable24": 25,
-      "censored24": 32,
-      "usable72": 0,
-      "censored72": 57
-    },
-    {
-      "cohort": "vast-live::RTX 4070S::2::on-demand",
-      "usable12": 42,
-      "censored12": 19,
-      "usable24": 23,
-      "censored24": 38,
-      "usable72": 0,
-      "censored72": 61
-    },
-    {
-      "cohort": "vast-live::RTX 3090::4::on-demand",
-      "usable12": 41,
-      "censored12": 14,
-      "usable24": 23,
-      "censored24": 32,
-      "usable72": 0,
-      "censored72": 55
-    },
-    {
-      "cohort": "vast-live::RTX 4080S::4::on-demand",
-      "usable12": 38,
-      "censored12": 14,
-      "usable24": 23,
-      "censored24": 29,
-      "usable72": 0,
-      "censored72": 52
-    },
-    {
-      "cohort": "vast-live::RTX 4070::4::on-demand",
-      "usable12": 44,
-      "censored12": 15,
-      "usable24": 26,
-      "censored24": 33,
-      "usable72": 0,
-      "censored72": 59
-    },
-    {
-      "cohort": "vast-live::RTX 5060 Ti::8::on-demand",
-      "usable12": 37,
-      "censored12": 16,
-      "usable24": 23,
-      "censored24": 30,
-      "usable72": 0,
-      "censored72": 53
-    },
-    {
-      "cohort": "vast-live::L40::2::on-demand",
-      "usable12": 29,
-      "censored12": 16,
-      "usable24": 16,
-      "censored24": 29,
       "usable72": 0,
       "censored72": 45
     },
     {
-      "cohort": "vast-live::L40::combined::combined",
-      "usable12": 39,
-      "censored12": 19,
-      "usable24": 24,
-      "censored24": 34,
+      "cohort": "vast-live::RTX 5070 Ti::combined::combined",
+      "usable12": 0,
+      "censored12": 74,
+      "usable24": 0,
+      "censored24": 74,
       "usable72": 0,
-      "censored72": 58
+      "censored72": 74
     },
     {
-      "cohort": "vast-live::RTX 4080::1::on-demand",
-      "usable12": 53,
+      "cohort": "vast-live::RTX 5060 Ti::1::on-demand",
+      "usable12": 0,
       "censored12": 20,
-      "usable24": 35,
-      "censored24": 38,
-      "usable72": 0,
-      "censored72": 73
-    },
-    {
-      "cohort": "vast-live::RTX PRO 5000::4::on-demand",
-      "usable12": 19,
-      "censored12": 0,
-      "usable24": 8,
-      "censored24": 11,
-      "usable72": 0,
-      "censored72": 19
-    },
-    {
-      "cohort": "vast-live::RTX PRO 4500::2::on-demand",
-      "usable12": 28,
-      "censored12": 8,
-      "usable24": 16,
+      "usable24": 0,
       "censored24": 20,
       "usable72": 0,
-      "censored72": 36
+      "censored72": 20
     },
     {
-      "cohort": "vast-live::L40::1::on-demand",
-      "usable12": 30,
-      "censored12": 13,
-      "usable24": 16,
-      "censored24": 27,
-      "usable72": 0,
-      "censored72": 43
-    },
-    {
-      "cohort": "vast-live::RTX 5880Ada::4::on-demand",
-      "usable12": 27,
-      "censored12": 13,
-      "usable24": 15,
-      "censored24": 25,
+      "cohort": "vast-live::RTX 5060 Ti::combined::combined",
+      "usable12": 0,
+      "censored12": 40,
+      "usable24": 0,
+      "censored24": 40,
       "usable72": 0,
       "censored72": 40
     },
     {
-      "cohort": "vast-live::RTX 5070::6::on-demand",
-      "usable12": 1,
-      "censored12": 0,
-      "usable24": 1,
-      "censored24": 0,
+      "cohort": "vast-live::RTX PRO 6000 WS::1::on-demand",
+      "usable12": 0,
+      "censored12": 24,
+      "usable24": 0,
+      "censored24": 24,
       "usable72": 0,
-      "censored72": 1
+      "censored72": 24
     },
     {
-      "cohort": "vast-live::RTX 4070S::4::on-demand",
-      "usable12": 13,
-      "censored12": 1,
-      "usable24": 5,
-      "censored24": 9,
+      "cohort": "vast-live::RTX PRO 6000 WS::combined::combined",
+      "usable12": 0,
+      "censored12": 27,
+      "usable24": 0,
+      "censored24": 27,
       "usable72": 0,
-      "censored72": 14
+      "censored72": 27
     },
     {
-      "cohort": "vast-live::RTX 3080::1::on-demand",
-      "usable12": 3,
-      "censored12": 0,
-      "usable24": 1,
-      "censored24": 2,
+      "cohort": "vast-live::RTX 4090::1::on-demand",
+      "usable12": 0,
+      "censored12": 215,
+      "usable24": 0,
+      "censored24": 215,
       "usable72": 0,
-      "censored72": 3
+      "censored72": 215
     },
     {
-      "cohort": "vast-live::RTX 3080::combined::combined",
-      "usable12": 3,
-      "censored12": 0,
-      "usable24": 1,
-      "censored24": 2,
+      "cohort": "vast-live::RTX 4090::combined::combined",
+      "usable12": 0,
+      "censored12": 453,
+      "usable24": 0,
+      "censored24": 453,
       "usable72": 0,
-      "censored72": 3
+      "censored72": 453
     },
     {
-      "cohort": "vast-live::RTX 5070::3::on-demand",
-      "usable12": 2,
+      "cohort": "vast-live::RTX 5060 Ti::2::on-demand",
+      "usable12": 0,
+      "censored12": 16,
+      "usable24": 0,
+      "censored24": 16,
+      "usable72": 0,
+      "censored72": 16
+    },
+    {
+      "cohort": "vast-live::RTX 5070 Ti::2::on-demand",
+      "usable12": 0,
+      "censored12": 23,
+      "usable24": 0,
+      "censored24": 23,
+      "usable72": 0,
+      "censored72": 23
+    },
+    {
+      "cohort": "vast-live::RTX 5070::4::on-demand",
+      "usable12": 0,
       "censored12": 3,
-      "usable24": 1,
-      "censored24": 4,
+      "usable24": 0,
+      "censored24": 3,
+      "usable72": 0,
+      "censored72": 3
+    },
+    {
+      "cohort": "vast-live::RTX 5070::combined::combined",
+      "usable12": 0,
+      "censored12": 5,
+      "usable24": 0,
+      "censored24": 5,
       "usable72": 0,
       "censored72": 5
     },
     {
-      "cohort": "vast-live::RTX 3090::3::on-demand",
-      "usable12": 3,
-      "censored12": 1,
-      "usable24": 1,
-      "censored24": 3,
-      "usable72": 0,
-      "censored72": 4
-    },
-    {
-      "cohort": "vast-live::RTX 5880Ada::1::on-demand",
-      "usable12": 2,
-      "censored12": 0,
-      "usable24": 1,
-      "censored24": 1,
-      "usable72": 0,
-      "censored72": 2
-    },
-    {
-      "cohort": "vast-live::H100 SXM::3::on-demand",
-      "usable12": 2,
-      "censored12": 0,
-      "usable24": 1,
-      "censored24": 1,
-      "usable72": 0,
-      "censored72": 2
-    },
-    {
-      "cohort": "vast-live::RTX PRO 4000::6::on-demand",
-      "usable12": 10,
-      "censored12": 1,
-      "usable24": 2,
-      "censored24": 9,
+      "cohort": "vast-live::RTX 5090::2::on-demand",
+      "usable12": 0,
+      "censored12": 11,
+      "usable24": 0,
+      "censored24": 11,
       "usable72": 0,
       "censored72": 11
     },
     {
-      "cohort": "vast-live::L40::3::on-demand",
-      "usable12": 3,
-      "censored12": 0,
+      "cohort": "vast-live::RTX 5070::2::on-demand",
+      "usable12": 0,
+      "censored12": 4,
       "usable24": 0,
-      "censored24": 3,
+      "censored24": 4,
       "usable72": 0,
-      "censored72": 3
+      "censored72": 4
     },
     {
-      "cohort": "vast-live::RTX 4090::3::on-demand",
-      "usable12": 3,
-      "censored12": 0,
+      "cohort": "vast-live::RTX 6000Ada::2::on-demand",
+      "usable12": 0,
+      "censored12": 2,
       "usable24": 0,
-      "censored24": 3,
+      "censored24": 2,
       "usable72": 0,
-      "censored72": 3
+      "censored72": 2
     },
     {
-      "cohort": "vast-live::RTX PRO 6000 WS::5::on-demand",
-      "usable12": 1,
+      "cohort": "vast-live::RTX 6000Ada::combined::combined",
+      "usable12": 0,
+      "censored12": 5,
+      "usable24": 0,
+      "censored24": 5,
+      "usable72": 0,
+      "censored72": 5
+    },
+    {
+      "cohort": "vast-live::RTX 4070S Ti::1::on-demand",
+      "usable12": 0,
+      "censored12": 15,
+      "usable24": 0,
+      "censored24": 15,
+      "usable72": 0,
+      "censored72": 15
+    },
+    {
+      "cohort": "vast-live::RTX 4070S Ti::combined::combined",
+      "usable12": 0,
+      "censored12": 30,
+      "usable24": 0,
+      "censored24": 30,
+      "usable72": 0,
+      "censored72": 30
+    },
+    {
+      "cohort": "vast-live::RTX 5080::2::on-demand",
+      "usable12": 0,
       "censored12": 0,
+      "usable24": 0,
+      "censored24": 0,
+      "usable72": 0,
+      "censored72": 0
+    },
+    {
+      "cohort": "vast-live::RTX 5080::combined::combined",
+      "usable12": 0,
+      "censored12": 7,
+      "usable24": 0,
+      "censored24": 7,
+      "usable72": 0,
+      "censored72": 7
+    },
+    {
+      "cohort": "vast-live::RTX 4070S Ti::2::on-demand",
+      "usable12": 0,
+      "censored12": 7,
+      "usable24": 0,
+      "censored24": 7,
+      "usable72": 0,
+      "censored72": 7
+    },
+    {
+      "cohort": "vast-live::RTX 5070::1::on-demand",
+      "usable12": 0,
+      "censored12": 1,
       "usable24": 0,
       "censored24": 1,
       "usable72": 0,
       "censored72": 1
     },
     {
-      "cohort": "vast-live::RTX 3090 Ti::2::on-demand",
+      "cohort": "vast-live::RTX 6000Ada::1::on-demand",
+      "usable12": 0,
+      "censored12": 2,
+      "usable24": 0,
+      "censored24": 2,
+      "usable72": 0,
+      "censored72": 2
+    },
+    {
+      "cohort": "vast-live::RTX 5060 Ti::4::on-demand",
+      "usable12": 0,
+      "censored12": 4,
+      "usable24": 0,
+      "censored24": 4,
+      "usable72": 0,
+      "censored72": 4
+    },
+    {
+      "cohort": "vast-live::RTX 5080::1::on-demand",
+      "usable12": 0,
+      "censored12": 6,
+      "usable24": 0,
+      "censored24": 6,
+      "usable72": 0,
+      "censored72": 6
+    },
+    {
+      "cohort": "vast-live::RTX 4090::2::on-demand",
+      "usable12": 0,
+      "censored12": 136,
+      "usable24": 0,
+      "censored24": 136,
+      "usable72": 0,
+      "censored72": 136
+    },
+    {
+      "cohort": "vast-live::RTX 3090::1::on-demand",
+      "usable12": 0,
+      "censored12": 118,
+      "usable24": 0,
+      "censored24": 118,
+      "usable72": 0,
+      "censored72": 118
+    },
+    {
+      "cohort": "vast-live::RTX 3090::combined::combined",
+      "usable12": 0,
+      "censored12": 176,
+      "usable24": 0,
+      "censored24": 176,
+      "usable72": 0,
+      "censored72": 176
+    },
+    {
+      "cohort": "vast-live::A100 PCIE::1::on-demand",
+      "usable12": 0,
+      "censored12": 1,
+      "usable24": 0,
+      "censored24": 1,
+      "usable72": 0,
+      "censored72": 1
+    },
+    {
+      "cohort": "vast-live::A100 PCIE::combined::combined",
+      "usable12": 0,
+      "censored12": 1,
+      "usable24": 0,
+      "censored24": 1,
+      "usable72": 0,
+      "censored72": 1
+    },
+    {
+      "cohort": "vast-live::RTX PRO 4000::1::on-demand",
+      "usable12": 0,
+      "censored12": 3,
+      "usable24": 0,
+      "censored24": 3,
+      "usable72": 0,
+      "censored72": 3
+    },
+    {
+      "cohort": "vast-live::RTX PRO 4000::combined::combined",
+      "usable12": 0,
+      "censored12": 9,
+      "usable24": 0,
+      "censored24": 9,
+      "usable72": 0,
+      "censored72": 9
+    },
+    {
+      "cohort": "vast-live::RTX PRO 4500::1::on-demand",
+      "usable12": 0,
+      "censored12": 2,
+      "usable24": 0,
+      "censored24": 2,
+      "usable72": 0,
+      "censored72": 2
+    },
+    {
+      "cohort": "vast-live::RTX PRO 4500::combined::combined",
+      "usable12": 0,
+      "censored12": 2,
+      "usable24": 0,
+      "censored24": 2,
+      "usable72": 0,
+      "censored72": 2
+    },
+    {
+      "cohort": "vast-live::B200::1::on-demand",
+      "usable12": 0,
+      "censored12": 1,
+      "usable24": 0,
+      "censored24": 1,
+      "usable72": 0,
+      "censored72": 1
+    },
+    {
+      "cohort": "vast-live::B200::combined::combined",
+      "usable12": 0,
+      "censored12": 13,
+      "usable24": 0,
+      "censored24": 13,
+      "usable72": 0,
+      "censored72": 13
+    },
+    {
+      "cohort": "vast-live::RTX 4070S Ti::4::on-demand",
+      "usable12": 0,
+      "censored12": 3,
+      "usable24": 0,
+      "censored24": 3,
+      "usable72": 0,
+      "censored72": 3
+    },
+    {
+      "cohort": "vast-live::RTX 5080::4::on-demand",
+      "usable12": 0,
+      "censored12": 1,
+      "usable24": 0,
+      "censored24": 1,
+      "usable72": 0,
+      "censored72": 1
+    },
+    {
+      "cohort": "vast-live::H100 SXM::1::on-demand",
+      "usable12": 0,
+      "censored12": 6,
+      "usable24": 0,
+      "censored24": 6,
+      "usable72": 0,
+      "censored72": 6
+    },
+    {
+      "cohort": "vast-live::H100 SXM::combined::combined",
+      "usable12": 0,
+      "censored12": 6,
+      "usable24": 0,
+      "censored24": 6,
+      "usable72": 0,
+      "censored72": 6
+    },
+    {
+      "cohort": "vast-live::RTX 3090::2::on-demand",
+      "usable12": 0,
+      "censored12": 39,
+      "usable24": 0,
+      "censored24": 39,
+      "usable72": 0,
+      "censored72": 39
+    },
+    {
+      "cohort": "vast-live::RTX 4070S::2::on-demand",
+      "usable12": 0,
+      "censored12": 2,
+      "usable24": 0,
+      "censored24": 2,
+      "usable72": 0,
+      "censored72": 2
+    },
+    {
+      "cohort": "vast-live::RTX 4070S::combined::combined",
+      "usable12": 0,
+      "censored12": 4,
+      "usable24": 0,
+      "censored24": 4,
+      "usable72": 0,
+      "censored72": 4
+    },
+    {
+      "cohort": "vast-live::RTX 5090::4::on-demand",
+      "usable12": 0,
+      "censored12": 9,
+      "usable24": 0,
+      "censored24": 9,
+      "usable72": 0,
+      "censored72": 9
+    },
+    {
+      "cohort": "vast-live::RTX PRO 6000 S::2::on-demand",
+      "usable12": 0,
+      "censored12": 17,
+      "usable24": 0,
+      "censored24": 17,
+      "usable72": 0,
+      "censored72": 17
+    },
+    {
+      "cohort": "vast-live::RTX 4070S::1::on-demand",
+      "usable12": 0,
+      "censored12": 1,
+      "usable24": 0,
+      "censored24": 1,
+      "usable72": 0,
+      "censored72": 1
+    },
+    {
+      "cohort": "vast-live::L40S::1::on-demand",
+      "usable12": 0,
+      "censored12": 8,
+      "usable24": 0,
+      "censored24": 8,
+      "usable72": 0,
+      "censored72": 8
+    },
+    {
+      "cohort": "vast-live::L40S::combined::combined",
+      "usable12": 0,
+      "censored12": 8,
+      "usable24": 0,
+      "censored24": 8,
+      "usable72": 0,
+      "censored72": 8
+    },
+    {
+      "cohort": "vast-live::RTX PRO 5000::1::on-demand",
+      "usable12": 0,
+      "censored12": 5,
+      "usable24": 0,
+      "censored24": 5,
+      "usable72": 0,
+      "censored72": 5
+    },
+    {
+      "cohort": "vast-live::RTX PRO 5000::combined::combined",
       "usable12": 0,
       "censored12": 10,
       "usable24": 0,
@@ -1258,7 +538,2221 @@
       "censored72": 10
     },
     {
+      "cohort": "vast-live::RTX 4070::1::on-demand",
+      "usable12": 0,
+      "censored12": 0,
+      "usable24": 0,
+      "censored24": 0,
+      "usable72": 0,
+      "censored72": 0
+    },
+    {
+      "cohort": "vast-live::RTX 4070::combined::combined",
+      "usable12": 0,
+      "censored12": 6,
+      "usable24": 0,
+      "censored24": 6,
+      "usable72": 0,
+      "censored72": 6
+    },
+    {
+      "cohort": "vast-live::RTX 4070::2::on-demand",
+      "usable12": 0,
+      "censored12": 6,
+      "usable24": 0,
+      "censored24": 6,
+      "usable72": 0,
+      "censored72": 6
+    },
+    {
+      "cohort": "vast-live::RTX 5880Ada::2::on-demand",
+      "usable12": 0,
+      "censored12": 2,
+      "usable24": 0,
+      "censored24": 2,
+      "usable72": 0,
+      "censored72": 2
+    },
+    {
+      "cohort": "vast-live::RTX 5880Ada::combined::combined",
+      "usable12": 0,
+      "censored12": 2,
+      "usable24": 0,
+      "censored24": 2,
+      "usable72": 0,
+      "censored72": 2
+    },
+    {
+      "cohort": "vast-live::RTX PRO 4000::4::on-demand",
+      "usable12": 0,
+      "censored12": 1,
+      "usable24": 0,
+      "censored24": 1,
+      "usable72": 0,
+      "censored72": 1
+    },
+    {
+      "cohort": "vast-live::RTX PRO 4000::2::on-demand",
+      "usable12": 0,
+      "censored12": 5,
+      "usable24": 0,
+      "censored24": 5,
+      "usable72": 0,
+      "censored72": 5
+    },
+    {
+      "cohort": "vast-live::RTX 5880Ada::1::on-demand",
+      "usable12": 0,
+      "censored12": 1,
+      "usable24": 0,
+      "censored24": 1,
+      "usable72": 0,
+      "censored72": 1
+    },
+    {
+      "cohort": "vast-live::RTX PRO 5000::2::on-demand",
+      "usable12": 0,
+      "censored12": 4,
+      "usable24": 0,
+      "censored24": 4,
+      "usable72": 0,
+      "censored72": 4
+    },
+    {
+      "cohort": "vast-live::RTX 4090::4::on-demand",
+      "usable12": 0,
+      "censored12": 68,
+      "usable24": 0,
+      "censored24": 68,
+      "usable72": 0,
+      "censored72": 68
+    },
+    {
+      "cohort": "vast-live::RTX 5000Ada::1::on-demand",
+      "usable12": 0,
+      "censored12": 1,
+      "usable24": 0,
+      "censored24": 1,
+      "usable72": 0,
+      "censored72": 1
+    },
+    {
+      "cohort": "vast-live::RTX 5000Ada::combined::combined",
+      "usable12": 0,
+      "censored12": 1,
+      "usable24": 0,
+      "censored24": 1,
+      "usable72": 0,
+      "censored72": 1
+    },
+    {
+      "cohort": "vast-live::RTX 4080S::1::on-demand",
+      "usable12": 0,
+      "censored12": 1,
+      "usable24": 0,
+      "censored24": 1,
+      "usable72": 0,
+      "censored72": 1
+    },
+    {
+      "cohort": "vast-live::RTX 4080S::combined::combined",
+      "usable12": 0,
+      "censored12": 1,
+      "usable24": 0,
+      "censored24": 1,
+      "usable72": 0,
+      "censored72": 1
+    },
+    {
+      "cohort": "vast-live::B200::2::on-demand",
+      "usable12": 0,
+      "censored12": 6,
+      "usable24": 0,
+      "censored24": 6,
+      "usable72": 0,
+      "censored72": 6
+    },
+    {
+      "cohort": "vast-live::RTX 4070 Ti::1::on-demand",
+      "usable12": 0,
+      "censored12": 9,
+      "usable24": 0,
+      "censored24": 9,
+      "usable72": 0,
+      "censored72": 9
+    },
+    {
+      "cohort": "vast-live::RTX 4070 Ti::combined::combined",
+      "usable12": 0,
+      "censored12": 11,
+      "usable24": 0,
+      "censored24": 11,
+      "usable72": 0,
+      "censored72": 11
+    },
+    {
+      "cohort": "vast-live::H200::4::on-demand",
+      "usable12": 0,
+      "censored12": 3,
+      "usable24": 0,
+      "censored24": 3,
+      "usable72": 0,
+      "censored72": 3
+    },
+    {
+      "cohort": "vast-live::H200::combined::combined",
+      "usable12": 0,
+      "censored12": 5,
+      "usable24": 0,
+      "censored24": 5,
+      "usable72": 0,
+      "censored72": 5
+    },
+    {
+      "cohort": "vast-live::RTX 4060 Ti::2::on-demand",
+      "usable12": 0,
+      "censored12": 13,
+      "usable24": 0,
+      "censored24": 13,
+      "usable72": 0,
+      "censored72": 13
+    },
+    {
+      "cohort": "vast-live::RTX 4060 Ti::combined::combined",
+      "usable12": 0,
+      "censored12": 35,
+      "usable24": 0,
+      "censored24": 35,
+      "usable72": 0,
+      "censored72": 35
+    },
+    {
+      "cohort": "vast-live::RTX PRO 6000 S::4::on-demand",
+      "usable12": 0,
+      "censored12": 17,
+      "usable24": 0,
+      "censored24": 17,
+      "usable72": 0,
+      "censored72": 17
+    },
+    {
+      "cohort": "vast-live::RTX 4080::2::on-demand",
+      "usable12": 0,
+      "censored12": 3,
+      "usable24": 0,
+      "censored24": 3,
+      "usable72": 0,
+      "censored72": 3
+    },
+    {
+      "cohort": "vast-live::RTX 4080::combined::combined",
+      "usable12": 0,
+      "censored12": 7,
+      "usable24": 0,
+      "censored24": 7,
+      "usable72": 0,
+      "censored72": 7
+    },
+    {
+      "cohort": "vast-live::L40::1::on-demand",
+      "usable12": 0,
+      "censored12": 0,
+      "usable24": 0,
+      "censored24": 0,
+      "usable72": 0,
+      "censored72": 0
+    },
+    {
+      "cohort": "vast-live::L40::combined::combined",
+      "usable12": 0,
+      "censored12": 1,
+      "usable24": 0,
+      "censored24": 1,
+      "usable72": 0,
+      "censored72": 1
+    },
+    {
+      "cohort": "vast-live::RTX 4070S Ti::8::on-demand",
+      "usable12": 0,
+      "censored12": 5,
+      "usable24": 0,
+      "censored24": 5,
+      "usable72": 0,
+      "censored72": 5
+    },
+    {
+      "cohort": "vast-live::RTX 4070S::4::on-demand",
+      "usable12": 0,
+      "censored12": 1,
+      "usable24": 0,
+      "censored24": 1,
+      "usable72": 0,
+      "censored72": 1
+    },
+    {
+      "cohort": "vast-live::RTX 4080S::2::on-demand",
+      "usable12": 0,
+      "censored12": 1,
+      "usable24": 0,
+      "censored24": 1,
+      "usable72": 0,
+      "censored72": 1
+    },
+    {
+      "cohort": "vast-live::H200::8::on-demand",
+      "usable12": 0,
+      "censored12": 3,
+      "usable24": 0,
+      "censored24": 3,
+      "usable72": 0,
+      "censored72": 3
+    },
+    {
+      "cohort": "vast-live::B200::4::on-demand",
+      "usable12": 0,
+      "censored12": 6,
+      "usable24": 0,
+      "censored24": 6,
+      "usable72": 0,
+      "censored72": 6
+    },
+    {
+      "cohort": "vast-live::RTX 4080::1::on-demand",
+      "usable12": 0,
+      "censored12": 5,
+      "usable24": 0,
+      "censored24": 5,
+      "usable72": 0,
+      "censored72": 5
+    },
+    {
+      "cohort": "vast-live::RTX PRO 6000 S::8::on-demand",
+      "usable12": 0,
+      "censored12": 6,
+      "usable24": 0,
+      "censored24": 6,
+      "usable72": 0,
+      "censored72": 6
+    },
+    {
+      "cohort": "vast-live::RTX 3080 Ti::1::on-demand",
+      "usable12": 0,
+      "censored12": 32,
+      "usable24": 0,
+      "censored24": 32,
+      "usable72": 0,
+      "censored72": 32
+    },
+    {
+      "cohort": "vast-live::RTX 3080 Ti::combined::combined",
+      "usable12": 0,
+      "censored12": 44,
+      "usable24": 0,
+      "censored24": 44,
+      "usable72": 0,
+      "censored72": 44
+    },
+    {
+      "cohort": "vast-live::L40::2::on-demand",
+      "usable12": 0,
+      "censored12": 3,
+      "usable24": 0,
+      "censored24": 3,
+      "usable72": 0,
+      "censored72": 3
+    },
+    {
+      "cohort": "vast-live::RTX A4000::1::on-demand",
+      "usable12": 0,
+      "censored12": 23,
+      "usable24": 0,
+      "censored24": 23,
+      "usable72": 0,
+      "censored72": 23
+    },
+    {
+      "cohort": "vast-live::RTX A4000::combined::combined",
+      "usable12": 0,
+      "censored12": 47,
+      "usable24": 0,
+      "censored24": 47,
+      "usable72": 0,
+      "censored72": 47
+    },
+    {
+      "cohort": "vast-live::RTX 4090::3::on-demand",
+      "usable12": 0,
+      "censored12": 8,
+      "usable24": 0,
+      "censored24": 8,
+      "usable72": 0,
+      "censored72": 8
+    },
+    {
+      "cohort": "vast-live::H100 NVL::1::on-demand",
+      "usable12": 0,
+      "censored12": 7,
+      "usable24": 0,
+      "censored24": 7,
+      "usable72": 0,
+      "censored72": 7
+    },
+    {
+      "cohort": "vast-live::H100 NVL::combined::combined",
+      "usable12": 0,
+      "censored12": 8,
+      "usable24": 0,
+      "censored24": 8,
+      "usable72": 0,
+      "censored72": 8
+    },
+    {
+      "cohort": "vast-live::A100 SXM4::1::on-demand",
+      "usable12": 0,
+      "censored12": 18,
+      "usable24": 0,
+      "censored24": 18,
+      "usable72": 0,
+      "censored72": 18
+    },
+    {
+      "cohort": "vast-live::A100 SXM4::combined::combined",
+      "usable12": 0,
+      "censored12": 26,
+      "usable24": 0,
+      "censored24": 26,
+      "usable72": 0,
+      "censored72": 26
+    },
+    {
+      "cohort": "vast-live::Titan V::2::on-demand",
+      "usable12": 0,
+      "censored12": 4,
+      "usable24": 0,
+      "censored24": 4,
+      "usable72": 0,
+      "censored72": 4
+    },
+    {
+      "cohort": "vast-live::Titan V::combined::combined",
+      "usable12": 0,
+      "censored12": 6,
+      "usable24": 0,
+      "censored24": 6,
+      "usable72": 0,
+      "censored72": 6
+    },
+    {
+      "cohort": "vast-live::RTX 5090::8::on-demand",
+      "usable12": 0,
+      "censored12": 3,
+      "usable24": 0,
+      "censored24": 3,
+      "usable72": 0,
+      "censored72": 3
+    },
+    {
+      "cohort": "vast-live::RTX A4000::4::on-demand",
+      "usable12": 0,
+      "censored12": 0,
+      "usable24": 0,
+      "censored24": 0,
+      "usable72": 0,
+      "censored72": 0
+    },
+    {
+      "cohort": "vast-live::RTX A5000::2::on-demand",
+      "usable12": 0,
+      "censored12": 16,
+      "usable24": 0,
+      "censored24": 16,
+      "usable72": 0,
+      "censored72": 16
+    },
+    {
+      "cohort": "vast-live::RTX A5000::combined::combined",
+      "usable12": 0,
+      "censored12": 57,
+      "usable24": 0,
+      "censored24": 57,
+      "usable72": 0,
+      "censored72": 57
+    },
+    {
+      "cohort": "vast-live::RTX 4060 Ti::1::on-demand",
+      "usable12": 0,
+      "censored12": 12,
+      "usable24": 0,
+      "censored24": 12,
+      "usable72": 0,
+      "censored72": 12
+    },
+    {
+      "cohort": "vast-live::A40::2::on-demand",
+      "usable12": 0,
+      "censored12": 7,
+      "usable24": 0,
+      "censored24": 7,
+      "usable72": 0,
+      "censored72": 7
+    },
+    {
+      "cohort": "vast-live::A40::combined::combined",
+      "usable12": 0,
+      "censored12": 10,
+      "usable24": 0,
+      "censored24": 10,
+      "usable72": 0,
+      "censored72": 10
+    },
+    {
+      "cohort": "vast-live::Titan V::1::on-demand",
+      "usable12": 0,
+      "censored12": 1,
+      "usable24": 0,
+      "censored24": 1,
+      "usable72": 0,
+      "censored72": 1
+    },
+    {
+      "cohort": "vast-live::RTX 5060 Ti::8::on-demand",
+      "usable12": 0,
+      "censored12": 0,
+      "usable24": 0,
+      "censored24": 0,
+      "usable72": 0,
+      "censored72": 0
+    },
+    {
+      "cohort": "vast-live::RTX 3080 Ti::2::on-demand",
+      "usable12": 0,
+      "censored12": 9,
+      "usable24": 0,
+      "censored24": 9,
+      "usable72": 0,
+      "censored72": 9
+    },
+    {
+      "cohort": "vast-live::RTX 6000Ada::4::on-demand",
+      "usable12": 0,
+      "censored12": 2,
+      "usable24": 0,
+      "censored24": 2,
+      "usable72": 0,
+      "censored72": 2
+    },
+    {
+      "cohort": "vast-live::L40S::2::on-demand",
+      "usable12": 0,
+      "censored12": 0,
+      "usable24": 0,
+      "censored24": 0,
+      "usable72": 0,
+      "censored72": 0
+    },
+    {
+      "cohort": "vast-live::RTX 5070 Ti::4::on-demand",
+      "usable12": 0,
+      "censored12": 6,
+      "usable24": 0,
+      "censored24": 6,
+      "usable72": 0,
+      "censored72": 6
+    },
+    {
+      "cohort": "vast-live::Tesla V100::8::on-demand",
+      "usable12": 0,
+      "censored12": 0,
+      "usable24": 0,
+      "censored24": 0,
+      "usable72": 0,
+      "censored72": 0
+    },
+    {
+      "cohort": "vast-live::Tesla V100::combined::combined",
+      "usable12": 0,
+      "censored12": 25,
+      "usable24": 0,
+      "censored24": 25,
+      "usable72": 0,
+      "censored72": 25
+    },
+    {
+      "cohort": "vast-live::A800 PCIE::1::on-demand",
+      "usable12": 0,
+      "censored12": 3,
+      "usable24": 0,
+      "censored24": 3,
+      "usable72": 0,
+      "censored72": 3
+    },
+    {
+      "cohort": "vast-live::A800 PCIE::combined::combined",
+      "usable12": 0,
+      "censored12": 3,
+      "usable24": 0,
+      "censored24": 3,
+      "usable72": 0,
+      "censored72": 3
+    },
+    {
+      "cohort": "vast-live::RTX 4060 Ti::4::on-demand",
+      "usable12": 0,
+      "censored12": 7,
+      "usable24": 0,
+      "censored24": 7,
+      "usable72": 0,
+      "censored72": 7
+    },
+    {
+      "cohort": "vast-live::RTX 3080::1::on-demand",
+      "usable12": 0,
+      "censored12": 10,
+      "usable24": 0,
+      "censored24": 10,
+      "usable72": 0,
+      "censored72": 10
+    },
+    {
+      "cohort": "vast-live::RTX 3080::combined::combined",
+      "usable12": 0,
+      "censored12": 11,
+      "usable24": 0,
+      "censored24": 11,
+      "usable72": 0,
+      "censored72": 11
+    },
+    {
+      "cohort": "vast-live::RTX 3090::4::on-demand",
+      "usable12": 0,
+      "censored12": 12,
+      "usable24": 0,
+      "censored24": 12,
+      "usable72": 0,
+      "censored72": 12
+    },
+    {
+      "cohort": "vast-live::RTX 3080 Ti::3::on-demand",
+      "usable12": 0,
+      "censored12": 1,
+      "usable24": 0,
+      "censored24": 1,
+      "usable72": 0,
+      "censored72": 1
+    },
+    {
+      "cohort": "vast-live::RTX 3090 Ti::1::on-demand",
+      "usable12": 0,
+      "censored12": 10,
+      "usable24": 0,
+      "censored24": 10,
+      "usable72": 0,
+      "censored72": 10
+    },
+    {
+      "cohort": "vast-live::RTX 3090 Ti::combined::combined",
+      "usable12": 0,
+      "censored12": 11,
+      "usable24": 0,
+      "censored24": 11,
+      "usable72": 0,
+      "censored72": 11
+    },
+    {
+      "cohort": "vast-live::A40::4::on-demand",
+      "usable12": 0,
+      "censored12": 3,
+      "usable24": 0,
+      "censored24": 3,
+      "usable72": 0,
+      "censored72": 3
+    },
+    {
+      "cohort": "vast-live::RTX 4090::8::on-demand",
+      "usable12": 0,
+      "censored12": 12,
+      "usable24": 0,
+      "censored24": 12,
+      "usable72": 0,
+      "censored72": 12
+    },
+    {
+      "cohort": "vast-live::RTX 3080 Ti::4::on-demand",
+      "usable12": 0,
+      "censored12": 2,
+      "usable24": 0,
+      "censored24": 2,
+      "usable72": 0,
+      "censored72": 2
+    },
+    {
+      "cohort": "vast-live::RTX 3070 Ti::1::on-demand",
+      "usable12": 0,
+      "censored12": 2,
+      "usable24": 0,
+      "censored24": 2,
+      "usable72": 0,
+      "censored72": 2
+    },
+    {
+      "cohort": "vast-live::RTX 3070 Ti::combined::combined",
+      "usable12": 0,
+      "censored12": 2,
+      "usable24": 0,
+      "censored24": 2,
+      "usable72": 0,
+      "censored72": 2
+    },
+    {
+      "cohort": "vast-live::A10::1::on-demand",
+      "usable12": 0,
+      "censored12": 0,
+      "usable24": 0,
+      "censored24": 0,
+      "usable72": 0,
+      "censored72": 0
+    },
+    {
+      "cohort": "vast-live::A10::combined::combined",
+      "usable12": 0,
+      "censored12": 1,
+      "usable24": 0,
+      "censored24": 1,
+      "usable72": 0,
+      "censored72": 1
+    },
+    {
+      "cohort": "vast-live::RTX A4000::2::on-demand",
+      "usable12": 0,
+      "censored12": 22,
+      "usable24": 0,
+      "censored24": 22,
+      "usable72": 0,
+      "censored72": 22
+    },
+    {
+      "cohort": "vast-live::RTX 4090D::2::on-demand",
+      "usable12": 0,
+      "censored12": 0,
+      "usable24": 0,
+      "censored24": 0,
+      "usable72": 0,
+      "censored72": 0
+    },
+    {
+      "cohort": "vast-live::RTX 4090D::combined::combined",
+      "usable12": 0,
+      "censored12": 0,
+      "usable24": 0,
+      "censored24": 0,
+      "usable72": 0,
+      "censored72": 0
+    },
+    {
+      "cohort": "vast-live::RTX 4090::5::on-demand",
+      "usable12": 0,
+      "censored12": 17,
+      "usable24": 0,
+      "censored24": 17,
+      "usable72": 0,
+      "censored72": 17
+    },
+    {
+      "cohort": "vast-live::RTX 4000Ada::4::on-demand",
+      "usable12": 0,
+      "censored12": 0,
+      "usable24": 0,
+      "censored24": 0,
+      "usable72": 0,
+      "censored72": 0
+    },
+    {
+      "cohort": "vast-live::RTX 4000Ada::combined::combined",
+      "usable12": 0,
+      "censored12": 1,
+      "usable24": 0,
+      "censored24": 1,
+      "usable72": 0,
+      "censored72": 1
+    },
+    {
+      "cohort": "vast-live::RTX 4070 Ti::2::on-demand",
+      "usable12": 0,
+      "censored12": 2,
+      "usable24": 0,
+      "censored24": 2,
+      "usable72": 0,
+      "censored72": 2
+    },
+    {
+      "cohort": "vast-live::RTX 3080::2::on-demand",
+      "usable12": 0,
+      "censored12": 0,
+      "usable24": 0,
+      "censored24": 0,
+      "usable72": 0,
+      "censored72": 0
+    },
+    {
+      "cohort": "vast-live::RTX A5000::1::on-demand",
+      "usable12": 0,
+      "censored12": 21,
+      "usable24": 0,
+      "censored24": 21,
+      "usable72": 0,
+      "censored72": 21
+    },
+    {
+      "cohort": "vast-live::RTX 3060::2::on-demand",
+      "usable12": 0,
+      "censored12": 44,
+      "usable24": 0,
+      "censored24": 44,
+      "usable72": 0,
+      "censored72": 44
+    },
+    {
+      "cohort": "vast-live::RTX 3060::combined::combined",
+      "usable12": 0,
+      "censored12": 148,
+      "usable24": 0,
+      "censored24": 148,
+      "usable72": 0,
+      "censored72": 148
+    },
+    {
+      "cohort": "vast-live::RTX 3090 Ti::2::on-demand",
+      "usable12": 0,
+      "censored12": 1,
+      "usable24": 0,
+      "censored24": 1,
+      "usable72": 0,
+      "censored72": 1
+    },
+    {
+      "cohort": "vast-live::RTX A4000::3::on-demand",
+      "usable12": 0,
+      "censored12": 2,
+      "usable24": 0,
+      "censored24": 2,
+      "usable72": 0,
+      "censored72": 2
+    },
+    {
+      "cohort": "vast-live::RTX 4070 Ti::4::on-demand",
+      "usable12": 0,
+      "censored12": 0,
+      "usable24": 0,
+      "censored24": 0,
+      "usable72": 0,
+      "censored72": 0
+    },
+    {
+      "cohort": "vast-live::RTX 4060::1::on-demand",
+      "usable12": 0,
+      "censored12": 2,
+      "usable24": 0,
+      "censored24": 2,
+      "usable72": 0,
+      "censored72": 2
+    },
+    {
+      "cohort": "vast-live::RTX 4060::combined::combined",
+      "usable12": 0,
+      "censored12": 4,
+      "usable24": 0,
+      "censored24": 4,
+      "usable72": 0,
+      "censored72": 4
+    },
+    {
+      "cohort": "vast-live::RTX 4000Ada::2::on-demand",
+      "usable12": 0,
+      "censored12": 0,
+      "usable24": 0,
+      "censored24": 0,
+      "usable72": 0,
+      "censored72": 0
+    },
+    {
+      "cohort": "vast-live::RTX 3070::1::on-demand",
+      "usable12": 0,
+      "censored12": 22,
+      "usable24": 0,
+      "censored24": 22,
+      "usable72": 0,
+      "censored72": 22
+    },
+    {
+      "cohort": "vast-live::RTX 3070::combined::combined",
+      "usable12": 0,
+      "censored12": 31,
+      "usable24": 0,
+      "censored24": 31,
+      "usable72": 0,
+      "censored72": 31
+    },
+    {
+      "cohort": "vast-live::RTX 5090::3::on-demand",
+      "usable12": 0,
+      "censored12": 4,
+      "usable24": 0,
+      "censored24": 4,
+      "usable72": 0,
+      "censored72": 4
+    },
+    {
+      "cohort": "vast-live::RTX 3060::1::on-demand",
+      "usable12": 0,
+      "censored12": 101,
+      "usable24": 0,
+      "censored24": 101,
+      "usable72": 0,
+      "censored72": 101
+    },
+    {
+      "cohort": "vast-live::RTX 3080::4::on-demand",
+      "usable12": 0,
+      "censored12": 0,
+      "usable24": 0,
+      "censored24": 0,
+      "usable72": 0,
+      "censored72": 0
+    },
+    {
+      "cohort": "vast-live::Tesla V100::2::on-demand",
+      "usable12": 0,
+      "censored12": 10,
+      "usable24": 0,
+      "censored24": 10,
+      "usable72": 0,
+      "censored72": 10
+    },
+    {
+      "cohort": "vast-live::RTX 3070::4::on-demand",
+      "usable12": 0,
+      "censored12": 3,
+      "usable24": 0,
+      "censored24": 3,
+      "usable72": 0,
+      "censored72": 3
+    },
+    {
+      "cohort": "vast-live::A10::2::on-demand",
+      "usable12": 0,
+      "censored12": 1,
+      "usable24": 0,
+      "censored24": 1,
+      "usable72": 0,
+      "censored72": 1
+    },
+    {
+      "cohort": "vast-live::Tesla V100::1::on-demand",
+      "usable12": 0,
+      "censored12": 12,
+      "usable24": 0,
+      "censored24": 12,
+      "usable72": 0,
+      "censored72": 12
+    },
+    {
+      "cohort": "vast-live::RTX 3080::8::on-demand",
+      "usable12": 0,
+      "censored12": 1,
+      "usable24": 0,
+      "censored24": 1,
+      "usable72": 0,
+      "censored72": 1
+    },
+    {
+      "cohort": "vast-live::A10::4::on-demand",
+      "usable12": 0,
+      "censored12": 1,
+      "usable24": 0,
+      "censored24": 1,
+      "usable72": 0,
+      "censored72": 1
+    },
+    {
+      "cohort": "vast-live::RTX A6000::1::on-demand",
+      "usable12": 0,
+      "censored12": 0,
+      "usable24": 0,
+      "censored24": 0,
+      "usable72": 0,
+      "censored72": 0
+    },
+    {
+      "cohort": "vast-live::RTX A6000::combined::combined",
+      "usable12": 0,
+      "censored12": 3,
+      "usable24": 0,
+      "censored24": 3,
+      "usable72": 0,
+      "censored72": 3
+    },
+    {
+      "cohort": "vast-live::RTX A6000::2::on-demand",
+      "usable12": 0,
+      "censored12": 2,
+      "usable24": 0,
+      "censored24": 2,
+      "usable72": 0,
+      "censored72": 2
+    },
+    {
+      "cohort": "vast-live::RTX 3070::2::on-demand",
+      "usable12": 0,
+      "censored12": 6,
+      "usable24": 0,
+      "censored24": 6,
+      "usable72": 0,
+      "censored72": 6
+    },
+    {
+      "cohort": "vast-live::Tesla V100::4::on-demand",
+      "usable12": 0,
+      "censored12": 3,
+      "usable24": 0,
+      "censored24": 3,
+      "usable72": 0,
+      "censored72": 3
+    },
+    {
+      "cohort": "vast-live::A100 SXM4::2::on-demand",
+      "usable12": 0,
+      "censored12": 7,
+      "usable24": 0,
+      "censored24": 7,
+      "usable72": 0,
+      "censored72": 7
+    },
+    {
+      "cohort": "vast-live::RTX A5000::3::on-demand",
+      "usable12": 0,
+      "censored12": 5,
+      "usable24": 0,
+      "censored24": 5,
+      "usable72": 0,
+      "censored72": 5
+    },
+    {
+      "cohort": "vast-live::RTX 3090::5::on-demand",
+      "usable12": 0,
+      "censored12": 6,
+      "usable24": 0,
+      "censored24": 6,
+      "usable72": 0,
+      "censored72": 6
+    },
+    {
+      "cohort": "vast-live::RTX A5000::5::on-demand",
+      "usable12": 0,
+      "censored12": 5,
+      "usable24": 0,
+      "censored24": 5,
+      "usable72": 0,
+      "censored72": 5
+    },
+    {
+      "cohort": "vast-live::RTX A5000::4::on-demand",
+      "usable12": 0,
+      "censored12": 10,
+      "usable24": 0,
+      "censored24": 10,
+      "usable72": 0,
+      "censored72": 10
+    },
+    {
+      "cohort": "vast-live::RTX 3060 Ti::1::on-demand",
+      "usable12": 0,
+      "censored12": 15,
+      "usable24": 0,
+      "censored24": 15,
+      "usable72": 0,
+      "censored72": 15
+    },
+    {
+      "cohort": "vast-live::RTX 3060 Ti::combined::combined",
+      "usable12": 0,
+      "censored12": 21,
+      "usable24": 0,
+      "censored24": 21,
+      "usable72": 0,
+      "censored72": 21
+    },
+    {
+      "cohort": "vast-live::RTX 4060::2::on-demand",
+      "usable12": 0,
+      "censored12": 3,
+      "usable24": 0,
+      "censored24": 3,
+      "usable72": 0,
+      "censored72": 3
+    },
+    {
+      "cohort": "vast-live::RTX 3060::4::on-demand",
+      "usable12": 0,
+      "censored12": 2,
+      "usable24": 0,
+      "censored24": 2,
+      "usable72": 0,
+      "censored72": 2
+    },
+    {
+      "cohort": "vast-live::A40::1::on-demand",
+      "usable12": 0,
+      "censored12": 0,
+      "usable24": 0,
+      "censored24": 0,
+      "usable72": 0,
+      "censored72": 0
+    },
+    {
+      "cohort": "vast-live::RTX 4090D::4::on-demand",
+      "usable12": 0,
+      "censored12": 0,
+      "usable24": 0,
+      "censored24": 0,
+      "usable72": 0,
+      "censored72": 0
+    },
+    {
+      "cohort": "vast-live::RTX A6000::4::on-demand",
+      "usable12": 0,
+      "censored12": 1,
+      "usable24": 0,
+      "censored24": 1,
+      "usable72": 0,
+      "censored72": 1
+    },
+    {
+      "cohort": "vast-live::RTX A2000::1::on-demand",
+      "usable12": 0,
+      "censored12": 6,
+      "usable24": 0,
+      "censored24": 6,
+      "usable72": 0,
+      "censored72": 6
+    },
+    {
+      "cohort": "vast-live::RTX A2000::combined::combined",
+      "usable12": 0,
+      "censored12": 11,
+      "usable24": 0,
+      "censored24": 11,
+      "usable72": 0,
+      "censored72": 11
+    },
+    {
+      "cohort": "vast-live::RTX A2000::2::on-demand",
+      "usable12": 0,
+      "censored12": 5,
+      "usable24": 0,
+      "censored24": 5,
+      "usable72": 0,
+      "censored72": 5
+    },
+    {
+      "cohort": "vast-live::RTX 3060 Ti::2::on-demand",
+      "usable12": 0,
+      "censored12": 6,
+      "usable24": 0,
+      "censored24": 6,
+      "usable72": 0,
+      "censored72": 6
+    },
+    {
+      "cohort": "vast-live::RTX 3060 laptop::1::on-demand",
+      "usable12": 0,
+      "censored12": 0,
+      "usable24": 0,
+      "censored24": 0,
+      "usable72": 0,
+      "censored72": 0
+    },
+    {
+      "cohort": "vast-live::RTX 3060 laptop::combined::combined",
+      "usable12": 0,
+      "censored12": 0,
+      "usable24": 0,
+      "censored24": 0,
+      "usable72": 0,
+      "censored72": 0
+    },
+    {
+      "cohort": "vast-live::H100 NVL::2::on-demand",
+      "usable12": 0,
+      "censored12": 1,
+      "usable24": 0,
+      "censored24": 1,
+      "usable72": 0,
+      "censored72": 1
+    },
+    {
+      "cohort": "vast-live::RTX 4090::10::on-demand",
+      "usable12": 0,
+      "censored12": 0,
+      "usable24": 0,
+      "censored24": 0,
+      "usable72": 0,
+      "censored72": 0
+    },
+    {
+      "cohort": "vast-live::RTX 3060 laptop::2::on-demand",
+      "usable12": 0,
+      "censored12": 0,
+      "usable24": 0,
+      "censored24": 0,
+      "usable72": 0,
+      "censored72": 0
+    },
+    {
+      "cohort": "vast-live::RTX 4060 Ti::8::on-demand",
+      "usable12": 0,
+      "censored12": 2,
+      "usable24": 0,
+      "censored24": 2,
+      "usable72": 0,
+      "censored72": 2
+    },
+    {
+      "cohort": "vast-live::RTX 3070 Ti::2::on-demand",
+      "usable12": 0,
+      "censored12": 0,
+      "usable24": 0,
+      "censored24": 0,
+      "usable72": 0,
+      "censored72": 0
+    },
+    {
+      "cohort": "vast-live::Titan V::4::on-demand",
+      "usable12": 0,
+      "censored12": 2,
+      "usable24": 0,
+      "censored24": 2,
+      "usable72": 0,
+      "censored72": 2
+    },
+    {
+      "cohort": "vast-live::RTX 3060 Ti::4::on-demand",
+      "usable12": 0,
+      "censored12": 0,
+      "usable24": 0,
+      "censored24": 0,
+      "usable72": 0,
+      "censored72": 0
+    },
+    {
+      "cohort": "vast-live::Titan Xp::4::on-demand",
+      "usable12": 0,
+      "censored12": 1,
+      "usable24": 0,
+      "censored24": 1,
+      "usable72": 0,
+      "censored72": 1
+    },
+    {
+      "cohort": "vast-live::Titan Xp::combined::combined",
+      "usable12": 0,
+      "censored12": 8,
+      "usable24": 0,
+      "censored24": 8,
+      "usable72": 0,
+      "censored72": 8
+    },
+    {
+      "cohort": "vast-live::Titan Xp::2::on-demand",
+      "usable12": 0,
+      "censored12": 2,
+      "usable24": 0,
+      "censored24": 2,
+      "usable72": 0,
+      "censored72": 2
+    },
+    {
+      "cohort": "vast-live::RTX 2080 Ti::4::on-demand",
+      "usable12": 0,
+      "censored12": 1,
+      "usable24": 0,
+      "censored24": 1,
+      "usable72": 0,
+      "censored72": 1
+    },
+    {
+      "cohort": "vast-live::RTX 2080 Ti::combined::combined",
+      "usable12": 0,
+      "censored12": 8,
+      "usable24": 0,
+      "censored24": 8,
+      "usable72": 0,
+      "censored72": 8
+    },
+    {
+      "cohort": "vast-live::RTX 2080 Ti::2::on-demand",
+      "usable12": 0,
+      "censored12": 0,
+      "usable24": 0,
+      "censored24": 0,
+      "usable72": 0,
+      "censored72": 0
+    },
+    {
+      "cohort": "vast-live::RTX A4000::6::on-demand",
+      "usable12": 0,
+      "censored12": 0,
+      "usable24": 0,
+      "censored24": 0,
+      "usable72": 0,
+      "censored72": 0
+    },
+    {
+      "cohort": "vast-live::RTX 2080 Ti::1::on-demand",
+      "usable12": 0,
+      "censored12": 7,
+      "usable24": 0,
+      "censored24": 7,
+      "usable72": 0,
+      "censored72": 7
+    },
+    {
+      "cohort": "vast-live::Titan Xp::1::on-demand",
+      "usable12": 0,
+      "censored12": 6,
+      "usable24": 0,
+      "censored24": 6,
+      "usable72": 0,
+      "censored72": 6
+    },
+    {
+      "cohort": "vast-live::A100 SXM4::4::on-demand",
+      "usable12": 0,
+      "censored12": 0,
+      "usable24": 0,
+      "censored24": 0,
+      "usable72": 0,
+      "censored72": 0
+    },
+    {
       "cohort": "vast-live::RTX 3090::8::on-demand",
+      "usable12": 0,
+      "censored12": 2,
+      "usable24": 0,
+      "censored24": 2,
+      "usable72": 0,
+      "censored72": 2
+    },
+    {
+      "cohort": "vast-live::Titan RTX::1::on-demand",
+      "usable12": 0,
+      "censored12": 0,
+      "usable24": 0,
+      "censored24": 0,
+      "usable72": 0,
+      "censored72": 0
+    },
+    {
+      "cohort": "vast-live::Titan RTX::combined::combined",
+      "usable12": 0,
+      "censored12": 0,
+      "usable24": 0,
+      "censored24": 0,
+      "usable72": 0,
+      "censored72": 0
+    },
+    {
+      "cohort": "vast-live::Titan RTX::2::on-demand",
+      "usable12": 0,
+      "censored12": 0,
+      "usable24": 0,
+      "censored24": 0,
+      "usable72": 0,
+      "censored72": 0
+    },
+    {
+      "cohort": "vast-live::GTX 1080 Ti::2::on-demand",
+      "usable12": 0,
+      "censored12": 4,
+      "usable24": 0,
+      "censored24": 4,
+      "usable72": 0,
+      "censored72": 4
+    },
+    {
+      "cohort": "vast-live::GTX 1080 Ti::combined::combined",
+      "usable12": 0,
+      "censored12": 9,
+      "usable24": 0,
+      "censored24": 9,
+      "usable72": 0,
+      "censored72": 9
+    },
+    {
+      "cohort": "vast-live::GTX 1080 Ti::1::on-demand",
+      "usable12": 0,
+      "censored12": 5,
+      "usable24": 0,
+      "censored24": 5,
+      "usable72": 0,
+      "censored72": 5
+    },
+    {
+      "cohort": "vast-live::RTX A5000::8::on-demand",
+      "usable12": 0,
+      "censored12": 4,
+      "usable24": 0,
+      "censored24": 4,
+      "usable72": 0,
+      "censored72": 4
+    },
+    {
+      "cohort": "vast-live::RTX 2080 Ti::8::on-demand",
+      "usable12": 0,
+      "censored12": 0,
+      "usable24": 0,
+      "censored24": 0,
+      "usable72": 0,
+      "censored72": 0
+    },
+    {
+      "cohort": "vast-live::Q RTX 6000::2::on-demand",
+      "usable12": 0,
+      "censored12": 3,
+      "usable24": 0,
+      "censored24": 3,
+      "usable72": 0,
+      "censored72": 3
+    },
+    {
+      "cohort": "vast-live::Q RTX 6000::combined::combined",
+      "usable12": 0,
+      "censored12": 0,
+      "usable24": 0,
+      "censored24": 0,
+      "usable72": 0,
+      "censored72": 0
+    },
+    {
+      "cohort": "vast-live::RTX 4090::14::on-demand",
+      "usable12": 0,
+      "censored12": 0,
+      "usable24": 0,
+      "censored24": 0,
+      "usable72": 0,
+      "censored72": 0
+    },
+    {
+      "cohort": "vast-live::RTX 3050::1::on-demand",
+      "usable12": 0,
+      "censored12": 1,
+      "usable24": 0,
+      "censored24": 1,
+      "usable72": 0,
+      "censored72": 1
+    },
+    {
+      "cohort": "vast-live::RTX 3050::combined::combined",
+      "usable12": 0,
+      "censored12": 1,
+      "usable24": 0,
+      "censored24": 1,
+      "usable72": 0,
+      "censored72": 1
+    },
+    {
+      "cohort": "vast-live::L4::1::on-demand",
+      "usable12": 0,
+      "censored12": 0,
+      "usable24": 0,
+      "censored24": 0,
+      "usable72": 0,
+      "censored72": 0
+    },
+    {
+      "cohort": "vast-live::L4::combined::combined",
+      "usable12": 0,
+      "censored12": 0,
+      "usable24": 0,
+      "censored24": 0,
+      "usable72": 0,
+      "censored72": 0
+    },
+    {
+      "cohort": "vast-live::Q RTX 6000::1::on-demand",
+      "usable12": 0,
+      "censored12": 0,
+      "usable24": 0,
+      "censored24": 0,
+      "usable72": 0,
+      "censored72": 0
+    },
+    {
+      "cohort": "vast-live::Q RTX 8000::1::on-demand",
+      "usable12": 0,
+      "censored12": 0,
+      "usable24": 0,
+      "censored24": 0,
+      "usable72": 0,
+      "censored72": 0
+    },
+    {
+      "cohort": "vast-live::Q RTX 8000::combined::combined",
+      "usable12": 0,
+      "censored12": 0,
+      "usable24": 0,
+      "censored24": 0,
+      "usable72": 0,
+      "censored72": 0
+    },
+    {
+      "cohort": "vast-live::Tesla P100::1::on-demand",
+      "usable12": 0,
+      "censored12": 0,
+      "usable24": 0,
+      "censored24": 0,
+      "usable72": 0,
+      "censored72": 0
+    },
+    {
+      "cohort": "vast-live::Tesla P100::combined::combined",
+      "usable12": 0,
+      "censored12": 0,
+      "usable24": 0,
+      "censored24": 0,
+      "usable72": 0,
+      "censored72": 0
+    },
+    {
+      "cohort": "vast-live::RTX 2060::1::on-demand",
+      "usable12": 0,
+      "censored12": 2,
+      "usable24": 0,
+      "censored24": 2,
+      "usable72": 0,
+      "censored72": 2
+    },
+    {
+      "cohort": "vast-live::RTX 2060::combined::combined",
+      "usable12": 0,
+      "censored12": 2,
+      "usable24": 0,
+      "censored24": 2,
+      "usable72": 0,
+      "censored72": 2
+    },
+    {
+      "cohort": "vast-live::L4::2::on-demand",
+      "usable12": 0,
+      "censored12": 0,
+      "usable24": 0,
+      "censored24": 0,
+      "usable72": 0,
+      "censored72": 0
+    },
+    {
+      "cohort": "vast-live::Tesla P40::2::on-demand",
+      "usable12": 0,
+      "censored12": 1,
+      "usable24": 0,
+      "censored24": 1,
+      "usable72": 0,
+      "censored72": 1
+    },
+    {
+      "cohort": "vast-live::Tesla P40::combined::combined",
+      "usable12": 0,
+      "censored12": 1,
+      "usable24": 0,
+      "censored24": 1,
+      "usable72": 0,
+      "censored72": 1
+    },
+    {
+      "cohort": "vast-live::A100 SXM4::8::on-demand",
+      "usable12": 0,
+      "censored12": 1,
+      "usable24": 0,
+      "censored24": 1,
+      "usable72": 0,
+      "censored72": 1
+    },
+    {
+      "cohort": "vast-live::GTX 1080::2::on-demand",
+      "usable12": 0,
+      "censored12": 1,
+      "usable24": 0,
+      "censored24": 1,
+      "usable72": 0,
+      "censored72": 1
+    },
+    {
+      "cohort": "vast-live::GTX 1080::combined::combined",
+      "usable12": 0,
+      "censored12": 5,
+      "usable24": 0,
+      "censored24": 5,
+      "usable72": 0,
+      "censored72": 5
+    },
+    {
+      "cohort": "vast-live::Tesla P40::1::on-demand",
+      "usable12": 0,
+      "censored12": 0,
+      "usable24": 0,
+      "censored24": 0,
+      "usable72": 0,
+      "censored72": 0
+    },
+    {
+      "cohort": "vast-live::RTX 2060S::1::on-demand",
+      "usable12": 0,
+      "censored12": 2,
+      "usable24": 0,
+      "censored24": 2,
+      "usable72": 0,
+      "censored72": 2
+    },
+    {
+      "cohort": "vast-live::RTX 2060S::combined::combined",
+      "usable12": 0,
+      "censored12": 4,
+      "usable24": 0,
+      "censored24": 4,
+      "usable72": 0,
+      "censored72": 4
+    },
+    {
+      "cohort": "vast-live::RTX 2060S::2::on-demand",
+      "usable12": 0,
+      "censored12": 2,
+      "usable24": 0,
+      "censored24": 2,
+      "usable72": 0,
+      "censored72": 2
+    },
+    {
+      "cohort": "vast-live::GTX 1080::4::on-demand",
+      "usable12": 0,
+      "censored12": 2,
+      "usable24": 0,
+      "censored24": 2,
+      "usable72": 0,
+      "censored72": 2
+    },
+    {
+      "cohort": "vast-live::GTX 1070 Ti::6::on-demand",
+      "usable12": 0,
+      "censored12": 0,
+      "usable24": 0,
+      "censored24": 0,
+      "usable72": 0,
+      "censored72": 0
+    },
+    {
+      "cohort": "vast-live::GTX 1070 Ti::combined::combined",
+      "usable12": 0,
+      "censored12": 17,
+      "usable24": 0,
+      "censored24": 17,
+      "usable72": 0,
+      "censored72": 17
+    },
+    {
+      "cohort": "vast-live::GTX 1080::1::on-demand",
+      "usable12": 0,
+      "censored12": 3,
+      "usable24": 0,
+      "censored24": 3,
+      "usable72": 0,
+      "censored72": 3
+    },
+    {
+      "cohort": "vast-live::GTX 1070 Ti::4::on-demand",
+      "usable12": 0,
+      "censored12": 4,
+      "usable24": 0,
+      "censored24": 4,
+      "usable72": 0,
+      "censored72": 4
+    },
+    {
+      "cohort": "vast-live::GTX 1070 Ti::2::on-demand",
+      "usable12": 0,
+      "censored12": 5,
+      "usable24": 0,
+      "censored24": 5,
+      "usable72": 0,
+      "censored72": 5
+    },
+    {
+      "cohort": "vast-live::RTX 2060::4::on-demand",
+      "usable12": 0,
+      "censored12": 0,
+      "usable24": 0,
+      "censored24": 0,
+      "usable72": 0,
+      "censored72": 0
+    },
+    {
+      "cohort": "vast-live::RTX 2060::2::on-demand",
+      "usable12": 0,
+      "censored12": 0,
+      "usable24": 0,
+      "censored24": 0,
+      "usable72": 0,
+      "censored72": 0
+    },
+    {
+      "cohort": "vast-live::GTX 1070 Ti::1::on-demand",
+      "usable12": 0,
+      "censored12": 8,
+      "usable24": 0,
+      "censored24": 8,
+      "usable72": 0,
+      "censored72": 8
+    },
+    {
+      "cohort": "vast-live::RTX 3070::3::on-demand",
+      "usable12": 0,
+      "censored12": 0,
+      "usable24": 0,
+      "censored24": 0,
+      "usable72": 0,
+      "censored72": 0
+    },
+    {
+      "cohort": "vast-live::Quadro P4000::1::on-demand",
+      "usable12": 0,
+      "censored12": 6,
+      "usable24": 0,
+      "censored24": 6,
+      "usable72": 0,
+      "censored72": 6
+    },
+    {
+      "cohort": "vast-live::Quadro P4000::combined::combined",
+      "usable12": 0,
+      "censored12": 6,
+      "usable24": 0,
+      "censored24": 6,
+      "usable72": 0,
+      "censored72": 6
+    },
+    {
+      "cohort": "vast-live::GTX 1660 S::2::on-demand",
+      "usable12": 0,
+      "censored12": 1,
+      "usable24": 0,
+      "censored24": 1,
+      "usable72": 0,
+      "censored72": 1
+    },
+    {
+      "cohort": "vast-live::GTX 1660 S::combined::combined",
+      "usable12": 0,
+      "censored12": 6,
+      "usable24": 0,
+      "censored24": 6,
+      "usable72": 0,
+      "censored72": 6
+    },
+    {
+      "cohort": "vast-live::Tesla M40::2::on-demand",
+      "usable12": 0,
+      "censored12": 1,
+      "usable24": 0,
+      "censored24": 1,
+      "usable72": 0,
+      "censored72": 1
+    },
+    {
+      "cohort": "vast-live::Tesla M40::combined::combined",
+      "usable12": 0,
+      "censored12": 1,
+      "usable24": 0,
+      "censored24": 1,
+      "usable72": 0,
+      "censored72": 1
+    },
+    {
+      "cohort": "vast-live::GTX 1660 S::1::on-demand",
+      "usable12": 0,
+      "censored12": 5,
+      "usable24": 0,
+      "censored24": 5,
+      "usable72": 0,
+      "censored72": 5
+    },
+    {
+      "cohort": "vast-live::GTX 1660 Ti::1::on-demand",
+      "usable12": 0,
+      "censored12": 3,
+      "usable24": 0,
+      "censored24": 3,
+      "usable72": 0,
+      "censored72": 3
+    },
+    {
+      "cohort": "vast-live::GTX 1660 Ti::combined::combined",
+      "usable12": 0,
+      "censored12": 5,
+      "usable24": 0,
+      "censored24": 5,
+      "usable72": 0,
+      "censored72": 5
+    },
+    {
+      "cohort": "vast-live::Tesla M40::1::on-demand",
+      "usable12": 0,
+      "censored12": 0,
+      "usable24": 0,
+      "censored24": 0,
+      "usable72": 0,
+      "censored72": 0
+    },
+    {
+      "cohort": "vast-live::GTX 1660 S::4::on-demand",
+      "usable12": 0,
+      "censored12": 0,
+      "usable24": 0,
+      "censored24": 0,
+      "usable72": 0,
+      "censored72": 0
+    },
+    {
+      "cohort": "vast-live::GTX 1660::1::on-demand",
+      "usable12": 0,
+      "censored12": 2,
+      "usable24": 0,
+      "censored24": 2,
+      "usable72": 0,
+      "censored72": 2
+    },
+    {
+      "cohort": "vast-live::GTX 1660::combined::combined",
+      "usable12": 0,
+      "censored12": 4,
+      "usable24": 0,
+      "censored24": 4,
+      "usable72": 0,
+      "censored72": 4
+    },
+    {
+      "cohort": "vast-live::GTX 1060::2::on-demand",
+      "usable12": 0,
+      "censored12": 2,
+      "usable24": 0,
+      "censored24": 2,
+      "usable72": 0,
+      "censored72": 2
+    },
+    {
+      "cohort": "vast-live::GTX 1060::combined::combined",
+      "usable12": 0,
+      "censored12": 5,
+      "usable24": 0,
+      "censored24": 5,
+      "usable72": 0,
+      "censored72": 5
+    },
+    {
+      "cohort": "vast-live::GTX 1060::1::on-demand",
+      "usable12": 0,
+      "censored12": 4,
+      "usable24": 0,
+      "censored24": 4,
+      "usable72": 0,
+      "censored72": 4
+    },
+    {
+      "cohort": "vast-live::RTX 2080S::1::on-demand",
+      "usable12": 0,
+      "censored12": 0,
+      "usable24": 0,
+      "censored24": 0,
+      "usable72": 0,
+      "censored72": 0
+    },
+    {
+      "cohort": "vast-live::RTX 2080S::combined::combined",
+      "usable12": 0,
+      "censored12": 0,
+      "usable24": 0,
+      "censored24": 0,
+      "usable72": 0,
+      "censored72": 0
+    },
+    {
+      "cohort": "vast-live::GTX 1070::1::on-demand",
+      "usable12": 0,
+      "censored12": 0,
+      "usable24": 0,
+      "censored24": 0,
+      "usable72": 0,
+      "censored72": 0
+    },
+    {
+      "cohort": "vast-live::GTX 1070::combined::combined",
+      "usable12": 0,
+      "censored12": 0,
+      "usable24": 0,
+      "censored24": 0,
+      "usable72": 0,
+      "censored72": 0
+    },
+    {
+      "cohort": "vast-live::H200 NVL::1::on-demand",
+      "usable12": 0,
+      "censored12": 3,
+      "usable24": 0,
+      "censored24": 3,
+      "usable72": 0,
+      "censored72": 3
+    },
+    {
+      "cohort": "vast-live::H200 NVL::combined::combined",
+      "usable12": 0,
+      "censored12": 3,
+      "usable24": 0,
+      "censored24": 3,
+      "usable72": 0,
+      "censored72": 3
+    },
+    {
+      "cohort": "vast-live::RTX 4080S::4::on-demand",
+      "usable12": 0,
+      "censored12": 2,
+      "usable24": 0,
+      "censored24": 2,
+      "usable72": 0,
+      "censored72": 2
+    },
+    {
+      "cohort": "vast-live::L40::4::on-demand",
+      "usable12": 0,
+      "censored12": 2,
+      "usable24": 0,
+      "censored24": 2,
+      "usable72": 0,
+      "censored72": 2
+    },
+    {
+      "cohort": "vast-live::A100 PCIE::4::on-demand",
+      "usable12": 0,
+      "censored12": 1,
+      "usable24": 0,
+      "censored24": 1,
+      "usable72": 0,
+      "censored72": 1
+    },
+    {
+      "cohort": "vast-live::Q RTX 8000::2::on-demand",
+      "usable12": 0,
+      "censored12": 0,
+      "usable24": 0,
+      "censored24": 0,
+      "usable72": 0,
+      "censored72": 0
+    },
+    {
+      "cohort": "vast-live::RTX 4090::6::on-demand",
+      "usable12": 0,
+      "censored12": 1,
+      "usable24": 0,
+      "censored24": 1,
+      "usable72": 0,
+      "censored72": 1
+    },
+    {
+      "cohort": "vast-live::H200::1::on-demand",
+      "usable12": 0,
+      "censored12": 6,
+      "usable24": 0,
+      "censored24": 6,
+      "usable72": 0,
+      "censored72": 6
+    },
+    {
+      "cohort": "vast-live::RTX 4060 Ti::5::on-demand",
+      "usable12": 0,
+      "censored12": 3,
+      "usable24": 0,
+      "censored24": 3,
+      "usable72": 0,
+      "censored72": 3
+    },
+    {
+      "cohort": "vast-live::RTX 4090::7::on-demand",
+      "usable12": 0,
+      "censored12": 2,
+      "usable24": 0,
+      "censored24": 2,
+      "usable72": 0,
+      "censored72": 2
+    },
+    {
+      "cohort": "vast-live::RTX 3060::8::on-demand",
+      "usable12": 0,
+      "censored12": 2,
+      "usable24": 0,
+      "censored24": 2,
+      "usable72": 0,
+      "censored72": 2
+    },
+    {
+      "cohort": "vast-live::RTX PRO 5000::4::on-demand",
+      "usable12": 0,
+      "censored12": 1,
+      "usable24": 0,
+      "censored24": 1,
+      "usable72": 0,
+      "censored72": 1
+    },
+    {
+      "cohort": "vast-live::Tesla P100::2::on-demand",
+      "usable12": 0,
+      "censored12": 0,
+      "usable24": 0,
+      "censored24": 0,
+      "usable72": 0,
+      "censored72": 0
+    },
+    {
+      "cohort": "vast-live::A100 PCIE::2::on-demand",
+      "usable12": 0,
+      "censored12": 1,
+      "usable24": 0,
+      "censored24": 1,
+      "usable72": 0,
+      "censored72": 1
+    },
+    {
+      "cohort": "vast-live::RTX 4090::9::on-demand",
+      "usable12": 0,
+      "censored12": 3,
+      "usable24": 0,
+      "censored24": 3,
+      "usable72": 0,
+      "censored72": 3
+    },
+    {
+      "cohort": "vast-live::H200::2::on-demand",
+      "usable12": 0,
+      "censored12": 1,
+      "usable24": 0,
+      "censored24": 1,
+      "usable72": 0,
+      "censored72": 1
+    },
+    {
+      "cohort": "vast-live::B200::8::on-demand",
+      "usable12": 0,
+      "censored12": 1,
+      "usable24": 0,
+      "censored24": 1,
+      "usable72": 0,
+      "censored72": 1
+    },
+    {
+      "cohort": "vast-live::GTX 1660 Ti::2::on-demand",
+      "usable12": 0,
+      "censored12": 2,
+      "usable24": 0,
+      "censored24": 2,
+      "usable72": 0,
+      "censored72": 2
+    },
+    {
+      "cohort": "vast-live::RTX PRO 6000 WS::4::on-demand",
+      "usable12": 0,
+      "censored12": 2,
+      "usable24": 0,
+      "censored24": 2,
+      "usable72": 0,
+      "censored72": 2
+    },
+    {
+      "cohort": "vast-live::Tesla T4::1::on-demand",
+      "usable12": 0,
+      "censored12": 1,
+      "usable24": 0,
+      "censored24": 1,
+      "usable72": 0,
+      "censored72": 1
+    },
+    {
+      "cohort": "vast-live::Tesla T4::combined::combined",
+      "usable12": 0,
+      "censored12": 1,
+      "usable24": 0,
+      "censored24": 1,
+      "usable72": 0,
+      "censored72": 1
+    },
+    {
+      "cohort": "vast-live::L40S::4::on-demand",
+      "usable12": 0,
+      "censored12": 0,
+      "usable24": 0,
+      "censored24": 0,
+      "usable72": 0,
+      "censored72": 0
+    },
+    {
+      "cohort": "vast-live::GTX 1660::2::on-demand",
+      "usable12": 0,
+      "censored12": 2,
+      "usable24": 0,
+      "censored24": 2,
+      "usable72": 0,
+      "censored72": 2
+    },
+    {
+      "cohort": "vast-live::RTX 4000Ada::1::on-demand",
+      "usable12": 0,
+      "censored12": 2,
+      "usable24": 0,
+      "censored24": 2,
+      "usable72": 0,
+      "censored72": 2
+    },
+    {
+      "cohort": "vast-live::RTX PRO 6000 WS::2::on-demand",
+      "usable12": 0,
+      "censored12": 2,
+      "usable24": 0,
+      "censored24": 2,
+      "usable72": 0,
+      "censored72": 2
+    },
+    {
+      "cohort": "vast-live::RTX 4080::4::on-demand",
+      "usable12": 0,
+      "censored12": 1,
+      "usable24": 0,
+      "censored24": 1,
+      "usable72": 0,
+      "censored72": 1
+    },
+    {
+      "cohort": "vast-live::RTX 5060::1::on-demand",
+      "usable12": 0,
+      "censored12": 2,
+      "usable24": 0,
+      "censored24": 2,
+      "usable72": 0,
+      "censored72": 2
+    },
+    {
+      "cohort": "vast-live::RTX 5060::combined::combined",
+      "usable12": 0,
+      "censored12": 2,
+      "usable24": 0,
+      "censored24": 2,
+      "usable72": 0,
+      "censored72": 2
+    },
+    {
+      "cohort": "vast-live::RTX 4070S Ti::10::on-demand",
+      "usable12": 0,
+      "censored12": 1,
+      "usable24": 0,
+      "censored24": 1,
+      "usable72": 0,
+      "censored72": 1
+    },
+    {
+      "cohort": "vast-live::RTX 5000Ada::2::on-demand",
+      "usable12": 0,
+      "censored12": 0,
+      "usable24": 0,
+      "censored24": 0,
+      "usable72": 0,
+      "censored72": 0
+    },
+    {
+      "cohort": "vast-live::H100 SXM::2::on-demand",
+      "usable12": 0,
+      "censored12": 1,
+      "usable24": 0,
+      "censored24": 1,
+      "usable72": 0,
+      "censored72": 1
+    },
+    {
+      "cohort": "vast-live::H100 PCIE::2::on-demand",
+      "usable12": 0,
+      "censored12": 0,
+      "usable24": 0,
+      "censored24": 0,
+      "usable72": 0,
+      "censored72": 0
+    },
+    {
+      "cohort": "vast-live::H100 PCIE::combined::combined",
+      "usable12": 0,
+      "censored12": 0,
+      "usable24": 0,
+      "censored24": 0,
+      "usable72": 0,
+      "censored72": 0
+    },
+    {
+      "cohort": "vast-live::Tesla T4::2::on-demand",
+      "usable12": 0,
+      "censored12": 0,
+      "usable24": 0,
+      "censored24": 0,
+      "usable72": 0,
+      "censored72": 0
+    },
+    {
+      "cohort": "vast-live::Quadro P4000::2::on-demand",
+      "usable12": 0,
+      "censored12": 0,
+      "usable24": 0,
+      "censored24": 0,
+      "usable72": 0,
+      "censored72": 0
+    },
+    {
+      "cohort": "vast-live::RTX 3050::2::on-demand",
+      "usable12": 0,
+      "censored12": 0,
+      "usable24": 0,
+      "censored24": 0,
+      "usable72": 0,
+      "censored72": 0
+    },
+    {
+      "cohort": "vast-live::GTX 1660::4::on-demand",
+      "usable12": 0,
+      "censored12": 2,
+      "usable24": 0,
+      "censored24": 2,
+      "usable72": 0,
+      "censored72": 2
+    },
+    {
+      "cohort": "vast-live::Tesla T4::4::on-demand",
+      "usable12": 0,
+      "censored12": 0,
+      "usable24": 0,
+      "censored24": 0,
+      "usable72": 0,
+      "censored72": 0
+    },
+    {
+      "cohort": "vast-live::RTX 5090::9::on-demand",
+      "usable12": 0,
+      "censored12": 2,
+      "usable24": 0,
+      "censored24": 2,
+      "usable72": 0,
+      "censored72": 2
+    },
+    {
+      "cohort": "vast-live::RTX 4070::4::on-demand",
       "usable12": 0,
       "censored12": 0,
       "usable24": 0,
